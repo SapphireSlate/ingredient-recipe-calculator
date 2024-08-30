@@ -71,3 +71,18 @@
     @apply bg-background text-foreground;
   }
 }
+@layer components {
+  .select-content {
+    background-color: hsl(var(--background)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+  }
+
+  .select-item {
+    background-color: hsl(var(--background)) !important;
+  }
+
+  .select-item:hover {
+    background-color: hsl(var(--accent)) !important;
+    color: hsl(var(--accent-foreground)) !important;
+  }
+}
