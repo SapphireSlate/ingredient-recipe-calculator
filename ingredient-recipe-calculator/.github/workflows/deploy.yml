@@ -10,15 +10,15 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout 🛎️
+      - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install and Build 🔧
+      - name: Install and Build
         run: |
           npm install
           npm run build
 
-      - name: Deploy 🚀
+      - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: build
