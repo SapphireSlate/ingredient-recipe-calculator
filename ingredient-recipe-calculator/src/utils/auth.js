@@ -25,16 +25,16 @@ export const createAccount = (username, password) => {
     return localStorage.getItem('currentUser');
   };
   
-  export const saveUserData = (username, ingredients, recipes) => {
-    const users = JSON.parse(localStorage.getItem('users')) || {};
-    if (users[username]) {
-      users[username].ingredients = ingredients;
-      users[username].recipes = recipes;
-      localStorage.setItem('users', JSON.stringify(users));
-    }
+  export const saveUserData = (username, ingredients, recipes, overheadValues) => {
+    const userData = {
+      ingredients,
+      recipes,
+      overheadValues
+    };
+    localStorage.setItem(`userData_${username}`, JSON.stringify(userData));
   };
   
   export const getUserData = (username) => {
-    const users = JSON.parse(localStorage.getItem('users')) || {};
-    return users[username] || { ingredients: [], recipes: [] };
+    const userData = localStorage.getItem(`userData_${username}`);
+    return userData ? JSON.parse(userData) : null;
   };
