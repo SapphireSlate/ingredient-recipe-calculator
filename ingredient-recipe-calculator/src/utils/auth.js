@@ -3,7 +3,7 @@ export const createAccount = (username, password) => {
     if (users[username]) {
       return { success: false, message: 'Username already exists' };
     }
-    users[username] = { password, ingredients: [], recipes: [] };
+    users[username] = { password, ingredients: [], recipes: [], overheadData: {} };
     localStorage.setItem('users', JSON.stringify(users));
     return { success: true, message: 'Account created successfully' };
   };
@@ -25,16 +25,13 @@ export const createAccount = (username, password) => {
     return localStorage.getItem('currentUser');
   };
   
-  export const saveUserData = (username, ingredients, recipes) => {
+  export const saveUserData = (username, ingredients, recipes, overheadData) => {
     const users = JSON.parse(localStorage.getItem('users')) || {};
-    if (users[username]) {
-      users[username].ingredients = ingredients;
-      users[username].recipes = recipes;
-      localStorage.setItem('users', JSON.stringify(users));
-    }
+    users[username] = { ...users[username], ingredients, recipes, overheadData };
+    localStorage.setItem('users', JSON.stringify(users));
   };
   
   export const getUserData = (username) => {
     const users = JSON.parse(localStorage.getItem('users')) || {};
-    return users[username] || { ingredients: [], recipes: [] };
+    return users[username] || { ingredients: [], recipes: [], overheadData: {} };
   };
