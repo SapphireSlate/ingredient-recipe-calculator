@@ -7,6 +7,7 @@ import { ScrollArea } from "./components/ui/scroll-area";
 import { Label } from "./components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { createAccount, login, logout, getCurrentUser, saveUserData, getUserData } from './utils/auth';
+import OverheadCalculator from './OverheadCalculator';
 
 const IngredientRecipeCalculator = () => {
   const [ingredients, setIngredients] = useState([
@@ -40,13 +41,20 @@ const IngredientRecipeCalculator = () => {
 
   const [recipes, setRecipes] = useState([]);
   const [newIngredient, setNewIngredient] = useState({ name: '', price: '', amount: '', unit: '' });
-  const [newRecipe, setNewRecipe] = useState({ name: '', ingredients: [] });
+  const [newRecipe, setNewRecipe] = useState({ name: '', ingredients: [], yield: 1, monthlySales: 0 });
   const [newRecipeIngredient, setNewRecipeIngredient] = useState({ ingredient: '', amount: '', unit: '' });
   const [currentUser, setCurrentUser] = useState(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [editingRecipeIndex, setEditingRecipeIndex] = useState(null);
   const [editingIngredientIndex, setEditingIngredientIndex] = useState(null);
+  const [overheadData, setOverheadData] = useState({
+    rent: 0,
+    utilities: 0,
+    payroll: 0,
+    otherExpenses: 0,
+    profitPercentage: 20
+  });
 
   const units = ['oz', 'lb', 'cup', 'tbsp', 'tsp', 'count'];
 
@@ -57,14 +65,15 @@ const IngredientRecipeCalculator = () => {
       const userData = getUserData(loggedInUser);
       setIngredients(prevIngredients => userData.ingredients || prevIngredients);
       setRecipes(userData.recipes || []);
+      setOverheadData(userData.overheadData || overheadData);
     }
   }, []);
 
   useEffect(() => {
     if (currentUser) {
-      saveUserData(currentUser, ingredients, recipes);
+      saveUserData(currentUser, ingredients, recipes, overheadData);
     }
-  }, [currentUser, ingredients, recipes]);
+  }, [currentUser, ingredients, recipes, overheadData]);
 
   const handleCreateAccount = () => {
     const result = createAccount(username, password);
@@ -159,15 +168,21 @@ const addNewRecipeIngredient = () => {
 
 const addNewRecipe = () => {
   if (newRecipe.name && newRecipe.ingredients.length > 0) {
+    const recipeWithCost = {
+      ...newRecipe,
+      cost: calculateRecipeCost(newRecipe),
+      yield: parseFloat(newRecipe.yield) || 1,
+      monthlySales: parseInt(newRecipe.monthlySales) || 0
+    };
     if (editingRecipeIndex !== null) {
       const updatedRecipes = [...recipes];
-      updatedRecipes[editingRecipeIndex] = newRecipe;
+      updatedRecipes[editingRecipeIndex] = recipeWithCost;
       setRecipes(updatedRecipes);
       setEditingRecipeIndex(null);
     } else {
-      setRecipes([...recipes, newRecipe]);
+      setRecipes([...recipes, recipeWithCost]);
     }
-    setNewRecipe({ name: '', ingredients: [] });
+    setNewRecipe({ name: '', ingredients: [], yield: 1, monthlySales: 0 });
   }
 };
 
@@ -180,16 +195,17 @@ const startEditingRecipe = (index) => {
 
 const cancelEditingRecipe = () => {
   setEditingRecipeIndex(null);
-  setNewRecipe({ name: '', ingredients: [] });
+  setNewRecipe({ name: '', ingredients: [], yield: 1, monthlySales: 0 });
 };
 
 const calculateRecipeCost = (recipe) => {
-  return recipe.ingredients.reduce((total, recipeIngredient) => {
+  const cost = recipe.ingredients.reduce((total, recipeIngredient) => {
     const ingredient = ingredients.find(i => i.name === recipeIngredient.ingredient);
     if (!ingredient) return total;
     const amount = convertToOz(parseFloat(recipeIngredient.amount), recipeIngredient.unit);
     return total + (amount * ingredient.unitPrice);
   }, 0);
+  return cost;
 };
 const cancelEditingIngredient = () => {
   setEditingIngredientIndex(null);
@@ -217,6 +233,12 @@ const editIngredientInRecipe = (recipeIndex, ingredientIndex, updatedIngredient)
   const updatedRecipes = [...recipes];
   updatedRecipes[recipeIndex].ingredients[ingredientIndex] = updatedIngredient;
   setRecipes(updatedRecipes);
+};
+
+const updateRecipe = (index, updatedRecipe) => {
+  const newRecipes = [...recipes];
+  newRecipes[index] = updatedRecipe;
+  setRecipes(newRecipes);
 };
 
 return (
@@ -251,6 +273,7 @@ return (
         <TabsList>
           <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
           <TabsTrigger value="recipes">Recipes</TabsTrigger>
+          <TabsTrigger value="overhead">Overhead</TabsTrigger>
         </TabsList>
         <TabsContent value="ingredients">
           <div className="grid grid-cols-5 gap-2 mb-2 font-bold">
@@ -336,7 +359,10 @@ return (
             {recipes.map((recipe, recipeIndex) => (
               <div key={recipeIndex} className="mb-4">
                 <h4 className="font-semibold">{recipe.name}</h4>
-                <p>Cost: ${calculateRecipeCost(recipe).toFixed(2)}</p>
+                <p>Cost: ${recipe.cost.toFixed(2)}</p>
+                <p>Yield: {recipe.yield} servings</p>
+                <p>Monthly Sales: {recipe.monthlySales} units</p>
+                {recipe.suggestedPrice && <p>Suggested Price: ${recipe.suggestedPrice}</p>}
                 <ul>
                   {recipe.ingredients.map((ingredient, ingredientIndex) => (
                     <li key={ingredientIndex} className="flex items-center justify-between">
@@ -421,7 +447,37 @@ return (
                 <Button onClick={cancelEditingRecipe}>Cancel Editing Recipe</Button>
               )}
             </div>
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              <div>
+                <Label htmlFor="recipeYield">Recipe Yield</Label>
+                <Input
+                  id="recipeYield"
+                  type="number"
+                  value={newRecipe.yield}
+                  onChange={(e) => setNewRecipe({...newRecipe, yield: e.target.value})}
+                  placeholder="Number of servings"
+                />
+              </div>
+              <div>
+                <Label htmlFor="monthlySales">Estimated Monthly Sales</Label>
+                <Input
+                  id="monthlySales"
+                  type="number"
+                  value={newRecipe.monthlySales}
+                  onChange={(e) => setNewRecipe({...newRecipe, monthlySales: e.target.value})}
+                  placeholder="Units sold per month"
+                />
+              </div>
+            </div>
           </div>
+        </TabsContent>
+        <TabsContent value="overhead">
+          <OverheadCalculator 
+            recipes={recipes} 
+            updateRecipe={updateRecipe}
+            overheadData={overheadData}
+            setOverheadData={setOverheadData}
+          />
         </TabsContent>
       </Tabs>
     </CardContent>
