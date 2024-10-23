@@ -289,21 +289,21 @@ return (
               {ingredients.map((ingredient, index) => (
                 <div key={index} className="grid grid-cols-5 gap-2">
                   <Input 
-                    value={ingredient.name} 
+                    value={ingredient.name || ''} 
                     onChange={(e) => updateIngredient(index, 'name', e.target.value)}
                   />
                   <Input 
                     type="number" 
-                    value={ingredient.price} 
+                    value={ingredient.price || ''} 
                     onChange={(e) => updateIngredient(index, 'price', parseFloat(e.target.value))}
                   />
                   <Input 
                     type="number" 
-                    value={ingredient.amount} 
+                    value={ingredient.amount || ''} 
                     onChange={(e) => updateIngredient(index, 'amount', parseFloat(e.target.value))}
                   />
                   <Select 
-                    value={ingredient.unit} 
+                    value={ingredient.unit || ''} 
                     onValueChange={(value) => updateIngredient(index, 'unit', value)}
                   >
                     <SelectTrigger>
@@ -315,7 +315,7 @@ return (
                       ))}
                     </SelectContent>
                   </Select>
-                  <Input value={ingredient.unitPrice.toFixed(4)} readOnly />
+                  <Input value={(ingredient.unitPrice || 0).toFixed(4)} readOnly />
                 </div>
               ))}
             </div>
@@ -324,23 +324,23 @@ return (
           <div className="grid grid-cols-5 gap-2">
             <Input 
               placeholder="Name" 
-              value={newIngredient.name}
+              value={newIngredient.name || ''}
               onChange={(e) => setNewIngredient({...newIngredient, name: e.target.value})}
             />
             <Input 
               type="number" 
               placeholder="Price" 
-              value={newIngredient.price}
+              value={newIngredient.price || ''}
               onChange={(e) => setNewIngredient({...newIngredient, price: e.target.value})}
             />
             <Input 
               type="number" 
               placeholder="Amount" 
-              value={newIngredient.amount}
+              value={newIngredient.amount || ''}
               onChange={(e) => setNewIngredient({...newIngredient, amount: e.target.value})}
             />
             <Select 
-              value={newIngredient.unit} 
+              value={newIngredient.unit || ''} 
               onValueChange={(value) => setNewIngredient({...newIngredient, unit: value})}
             >
               <SelectTrigger>
@@ -359,15 +359,15 @@ return (
           <ScrollArea className="h-[300px] pr-4 mb-6">
             {recipes.map((recipe, recipeIndex) => (
               <div key={recipeIndex} className="mb-4">
-                <h4 className="font-semibold">{recipe.name}</h4>
-                <p>Cost: ${recipe.cost.toFixed(2)}</p>
-                <p>Yield: {recipe.yield} servings</p>
-                <p>Monthly Sales: {recipe.monthlySales} units</p>
-                {recipe.suggestedPrice && <p>Suggested Price: ${recipe.suggestedPrice}</p>}
+                <h4 className="font-semibold">{recipe.name || 'Unnamed Recipe'}</h4>
+                <p>Cost: ${(recipe.cost || 0).toFixed(2)}</p>
+                <p>Yield: {recipe.yield || 0} servings</p>
+                <p>Monthly Sales: {recipe.monthlySales || 0} units</p>
+                {recipe.suggestedPrice && <p>Suggested Price: ${(recipe.suggestedPrice || 0).toFixed(2)}</p>}
                 <ul>
-                  {recipe.ingredients.map((ingredient, ingredientIndex) => (
+                  {recipe.ingredients?.map((ingredient, ingredientIndex) => (
                     <li key={ingredientIndex} className="flex items-center justify-between">
-                      <span>{ingredient.amount} {ingredient.unit} {ingredient.ingredient}</span>
+                      <span>{(ingredient.amount || 0)} {ingredient.unit || ''} {ingredient.ingredient || ''}</span>
                       <div>
                         <Button onClick={() => {
                           setNewRecipeIngredient(ingredient);
@@ -386,12 +386,12 @@ return (
           <div className="space-y-4">
             <Input 
               placeholder="Recipe Name" 
-              value={newRecipe.name}
+              value={newRecipe.name || ''}
               onChange={(e) => setNewRecipe({...newRecipe, name: e.target.value})}
             />
             <div className="grid grid-cols-4 gap-2">
               <Select 
-                value={newRecipeIngredient.ingredient}
+                value={newRecipeIngredient.ingredient || ''} 
                 onValueChange={(value) => setNewRecipeIngredient({...newRecipeIngredient, ingredient: value})}
               >
                 <SelectTrigger>
@@ -399,18 +399,18 @@ return (
                 </SelectTrigger>
                 <SelectContent className="select-content">
                   {ingredients.map(ing => (
-                    <SelectItem key={ing.name} value={ing.name} className="select-item">{ing.name}</SelectItem>
+                    <SelectItem key={ing.name} value={ing.name || ''} className="select-item">{ing.name || ''}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Input 
                 type="number"
                 placeholder="Amount"
-                value={newRecipeIngredient.amount}
+                value={newRecipeIngredient.amount || ''}
                 onChange={(e) => setNewRecipeIngredient({...newRecipeIngredient, amount: e.target.value})}
               />
               <Select 
-                value={newRecipeIngredient.unit}
+                value={newRecipeIngredient.unit || ''} 
                 onValueChange={(value) => setNewRecipeIngredient({...newRecipeIngredient, unit: value})}
               >
                 <SelectTrigger>
@@ -429,13 +429,13 @@ return (
             {editingIngredientIndex !== null && (
               <Button onClick={cancelEditingIngredient}>Cancel Editing Ingredient</Button>
             )}
-            {newRecipe.ingredients.length > 0 && (
+            {newRecipe.ingredients && newRecipe.ingredients.length > 0 && (
               <div className="mt-4">
-                <h4 className="font-semibold">Current Recipe: {newRecipe.name}</h4>
-                <p>Estimated Cost: ${calculateRecipeCost(newRecipe).toFixed(2)}</p>
+                <h4 className="font-semibold">Current Recipe: {newRecipe.name || 'Unnamed Recipe'}</h4>
+                <p>Estimated Cost: ${(calculateRecipeCost(newRecipe) || 0).toFixed(2)}</p>
                 <ul>
                   {newRecipe.ingredients.map((ingredient, idx) => (
-                    <li key={idx}>{ingredient.amount} {ingredient.unit} {ingredient.ingredient}</li>
+                    <li key={idx}>{(ingredient.amount || 0)} {ingredient.unit || ''} {ingredient.ingredient || ''}</li>
                   ))}
                 </ul>
               </div>
@@ -454,7 +454,7 @@ return (
                 <Input
                   id="recipeYield"
                   type="number"
-                  value={newRecipe.yield}
+                  value={newRecipe.yield || ''}
                   onChange={(e) => setNewRecipe({...newRecipe, yield: e.target.value})}
                   placeholder="Number of servings"
                 />
@@ -464,7 +464,7 @@ return (
                 <Input
                   id="monthlySales"
                   type="number"
-                  value={newRecipe.monthlySales}
+                  value={newRecipe.monthlySales || ''}
                   onChange={(e) => setNewRecipe({...newRecipe, monthlySales: e.target.value})}
                   placeholder="Units sold per month"
                 />
@@ -476,7 +476,7 @@ return (
           <OverheadCalculator 
             recipes={recipes} 
             updateRecipe={updateRecipe}
-            overheadData={overheadData}
+            overheadData={overheadData || {}}
             setOverheadData={setOverheadData}
           />
         </TabsContent>
