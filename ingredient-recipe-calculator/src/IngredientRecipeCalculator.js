@@ -37,7 +37,7 @@ const IngredientRecipeCalculator = () => {
     { name: 'Nuts (Assorted)', price: 6.00, amount: 16, unit: 'oz', unitPrice: 0.375, category: 'Add-ins' },
     { name: 'Cream of Tartar', price: 3.00, amount: 3, unit: 'oz', unitPrice: 1, category: 'Dry Goods' },
     { name: 'Cornstarch', price: 2.00, amount: 16, unit: 'oz', unitPrice: 0.125, category: 'Dry Goods' },
-    { name: 'Yeast', price: 2.00, amount: 4, unit: 'oz', unitPrice: 1, category: 'Dry Goods' },
+    { name: 'Yeast', price: 4.00, amount: 4, unit: 'oz', unitPrice: 1, category: 'Dry Goods' },
   ]);
 
   const [recipes, setRecipes] = useState([]);
