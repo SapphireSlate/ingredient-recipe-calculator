@@ -1,27 +1,33 @@
-import { Ingredient, Unit } from '../../ingredients/types';
-
-export interface RecipeIngredient {
-  ingredient: string;
-  amount: number;
+export interface Ingredient {
+  id: string;
+  name: string;
+  cost: number;
   unit: Unit;
+  quantity: number;
+  description?: string;
+  category?: Category;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Recipe {
+  id: string;
   name: string;
+  description?: string;
   ingredients: RecipeIngredient[];
-  yield: number;
-  monthlySales: number;
+  totalCost: number;
+  servings: number;
+  category?: Category;
+  instructions?: string[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface NewRecipe {
-  name: string;
-  ingredients: RecipeIngredient[];
-  yield: number;
-  monthlySales: number;
+export interface RecipeIngredient {
+  ingredientId: string;
+  quantity: number;
 }
 
-export interface NewRecipeIngredient {
-  ingredient: string;
-  amount: string | number;
-  unit: Unit;
-} 
+export type Unit = 'g' | 'kg' | 'ml' | 'l' | 'unit' | 'oz' | 'lb' | 'cup' | 'tbsp' | 'tsp';
+
+export type Category = 'Dry Goods' | 'Dairy' | 'Meat' | 'Produce' | 'Spices' | 'Other'; 
