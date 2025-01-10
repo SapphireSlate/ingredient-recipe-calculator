@@ -47,10 +47,23 @@ The application will open in your default browser at [http://localhost:3000](htt
 
 ## Development Notes
 
-- The v2 branch is the main development branch
-- The experimental features branch has been deprecated and archived
+- `main` branch is the stable, production-ready branch
+- `v2` branch contains experimental features and ongoing development (not recommended for production use)
+- The original experimental features branch has been deprecated and archived
 - Uses TailwindCSS for styling
 - React 18 with modern hooks and patterns
+
+## Branch Structure
+
+- `main`: Stable production branch
+  - Contains the stable, tested version of the application
+  - Used for GitHub Pages deployment
+  - Recommended for production use
+
+- `v2`: Experimental development branch
+  - Contains new features under development
+  - May have unstable changes
+  - For testing and development purposes only
 
 ## Contributing
 
