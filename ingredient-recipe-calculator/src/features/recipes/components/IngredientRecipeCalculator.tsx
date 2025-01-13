@@ -1,228 +1,325 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
-import { Input } from '../../../components/ui/input';
-import { Button } from '../../../components/ui/button';
-import { useIngredientStore } from '../../../store/useIngredientStore';
-import { useRecipeStore } from '../../../store/useRecipeStore';
-import { usePreferencesStore } from '../../../store/usePreferencesStore';
-import { Ingredient, Recipe, Unit, RecipeIngredient } from '../types';
-import { validateIngredient, validateRecipe } from '../../../lib/validation';
-import { useToast } from '../../../hooks/useToast';
-import { ToastContainer } from '../../../components/ui/toast-container';
-import { v4 as uuidv4 } from 'uuid';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
+import { Input } from "@components/ui/input";
+import { Button } from "@components/ui/button";
+import { Select, SelectItem } from "@components/ui/select";
+import { ScrollArea } from "@components/ui/scroll-area";
+import { Label } from "@components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/ui/tabs";
+import { createAccount, login, logout, getCurrentUser, saveUserData, getUserData } from '@utils/auth';
+import { OverheadCalculator } from '@features/overhead/components/OverheadCalculator';
+import { convertToOz } from '@utils/conversion';
+import { RecipeManagement } from './RecipeManagement';
 
-export const IngredientRecipeCalculator: React.FC = () => {
+import { Ingredient, NewIngredient, Unit, Category } from '@features/ingredients/types';
+import { Recipe, NewRecipe, RecipeIngredient, NewRecipeIngredient } from '../types';
+import type { User } from '@shared/types/user';
+import { ThemeToggle } from '@components/ui/theme-toggle';
+
+const IngredientRecipeCalculator: React.FC = () => {
+  const [ingredients, setIngredients] = useState<Ingredient[]>([
+    { name: 'All Purpose Flour', price: 5.00, amount: 5, unit: 'lb', unitPrice: 0.0625, category: 'Dry Goods' },
+    { name: 'Granulated Sugar', price: 4.00, amount: 4, unit: 'lb', unitPrice: 0.0625, category: 'Dry Goods' },
+    // ... rest of the initial ingredients
+  ]);
+
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [newIngredient, setNewIngredient] = useState<NewIngredient>({ name: '', price: '', amount: '', unit: 'lb' });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [username, setUsername] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [activeTab, setActiveTab] = useState('ingredients');
-  const [newIngredient, setNewIngredient] = useState<Partial<Ingredient>>({});
-  const [newRecipe, setNewRecipe] = useState<Partial<Recipe>>({});
-  const [editingIngredientId, setEditingIngredientId] = useState<string | null>(null);
+  const [overheadCost, setOverheadCost] = useState(0);
+  const [editingIngredient, setEditingIngredient] = useState<{ index: number; ingredient: Ingredient } | null>(null);
 
-  const { ingredients, addIngredient, updateIngredient, deleteIngredient } = useIngredientStore();
-  const { recipes, addRecipe, updateRecipe, deleteRecipe } = useRecipeStore();
-  const { theme, defaultUnit, defaultCurrency, setTheme } = usePreferencesStore();
-  const { toasts, addToast, removeToast } = useToast();
-
-  const handleAddIngredient = () => {
-    const validationErrors = validateIngredient(newIngredient);
-    if (validationErrors.length > 0) {
-      validationErrors.forEach((error) => {
-        addToast({
-          title: 'Validation Error',
-          description: error.message,
-          type: 'error',
-        });
-      });
-      return;
-    }
-
-    const ingredient: Ingredient = {
-      id: uuidv4(),
-      ...newIngredient,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as Ingredient;
-
+  const handleCreateAccount = async (): Promise<void> => {
     try {
-      if (editingIngredientId) {
-        updateIngredient(editingIngredientId, ingredient);
-        setEditingIngredientId(null);
-        addToast({
-          title: 'Success',
-          description: 'Ingredient updated successfully',
-          type: 'success',
-        });
-      } else {
-        addIngredient(ingredient);
-        addToast({
-          title: 'Success',
-          description: 'Ingredient added successfully',
-          type: 'success',
-        });
+      await createAccount(username, password);
+      // Handle successful account creation
+    } catch (error) {
+      console.error('Error creating account:', error);
+    }
+  };
+
+  const handleLogin = async (): Promise<void> => {
+    try {
+      await login(username, password);
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+      // Load user data
+      const userData = await getUserData();
+      if (userData) {
+        setIngredients(userData.ingredients);
+        setRecipes(userData.recipes);
       }
-      setNewIngredient({});
     } catch (error) {
-      addToast({
-        title: 'Error',
-        description: 'Failed to save ingredient',
-        type: 'error',
-      });
+      console.error('Error logging in:', error);
     }
   };
 
-  const handleEditIngredient = (ingredient: Ingredient) => {
-    setNewIngredient(ingredient);
-    setEditingIngredientId(ingredient.id);
-  };
-
-  const handleDeleteIngredient = (id: string) => {
+  const handleLogout = async (): Promise<void> => {
     try {
-      deleteIngredient(id);
-      addToast({
-        title: 'Success',
-        description: 'Ingredient deleted successfully',
-        type: 'success',
-      });
+      await logout();
+      setCurrentUser(null);
+      setIngredients([]);
+      setRecipes([]);
     } catch (error) {
-      addToast({
-        title: 'Error',
-        description: 'Failed to delete ingredient',
-        type: 'error',
-      });
+      console.error('Error logging out:', error);
     }
   };
 
-  const handleAddRecipe = () => {
-    const validationErrors = validateRecipe(newRecipe);
-    if (validationErrors.length > 0) {
-      validationErrors.forEach((error) => {
-        addToast({
-          title: 'Validation Error',
-          description: error.message,
-          type: 'error',
-        });
-      });
-      return;
-    }
+  const calculateUnitPrice = (price: number, amount: number, unit: Unit): number => {
+    const ozAmount = convertToOz(amount, unit);
+    return ozAmount > 0 ? price / ozAmount : 0;
+  };
 
-    const recipe: Recipe = {
-      id: uuidv4(),
-      ...newRecipe,
-      totalCost: calculateRecipeCost(newRecipe.ingredients || []),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as Recipe;
+  const handleEditIngredient = (index: number, ingredient: Ingredient) => {
+    setEditingIngredient({ index, ingredient });
+    setNewIngredient({
+      name: ingredient.name,
+      price: ingredient.price.toString(),
+      amount: ingredient.amount.toString(),
+      unit: ingredient.unit,
+    });
+  };
 
-    try {
-      addRecipe(recipe);
-      setNewRecipe({});
-      addToast({
-        title: 'Success',
-        description: 'Recipe added successfully',
-        type: 'success',
-      });
-    } catch (error) {
-      addToast({
-        title: 'Error',
-        description: 'Failed to save recipe',
-        type: 'error',
-      });
+  const addNewIngredient = (): void => {
+    if (newIngredient.name && newIngredient.price && newIngredient.amount && newIngredient.unit) {
+      const price = Number(newIngredient.price);
+      const amount = Number(newIngredient.amount);
+      const unitPrice = calculateUnitPrice(price, amount, newIngredient.unit);
+      
+      const ingredient: Ingredient = {
+        name: newIngredient.name,
+        price,
+        amount,
+        unit: newIngredient.unit,
+        unitPrice,
+        category: editingIngredient?.ingredient.category || 'Dry Goods'
+      };
+      
+      if (editingIngredient) {
+        const newIngredients = [...ingredients];
+        newIngredients[editingIngredient.index] = ingredient;
+        setIngredients(newIngredients);
+        setEditingIngredient(null);
+      } else {
+        setIngredients([...ingredients, ingredient]);
+      }
+      
+      setNewIngredient({ name: '', price: '', amount: '', unit: 'lb' });
     }
   };
 
-  const calculateRecipeCost = (recipeIngredients: RecipeIngredient[]) => {
-    return recipeIngredients.reduce((total, { ingredientId, quantity }) => {
-      const ingredient = ingredients.find((i) => i.id === ingredientId);
-      if (!ingredient) return total;
-      return total + (ingredient.cost * quantity);
-    }, 0);
+  const handleAddRecipe = (recipe: Recipe) => {
+    setRecipes([...recipes, recipe]);
   };
 
-  const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
+  const handleUpdateRecipe = (index: number, recipe: Recipe) => {
+    const newRecipes = [...recipes];
+    newRecipes[index] = recipe;
+    setRecipes(newRecipes);
+  };
+
+  const handleDeleteRecipe = (index: number) => {
+    const newRecipes = [...recipes];
+    newRecipes.splice(index, 1);
+    setRecipes(newRecipes);
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
   };
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="container mx-auto p-4">
-        <Card>
+    <div className="container mx-auto p-4 pb-20">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-0">Recipe Cost Calculator</h1>
+        {currentUser && (
+          <div className="flex items-center space-x-4">
+            <p className="text-sm">Logged in as: {currentUser.username}</p>
+            <Button variant="outline" onClick={handleLogout}>Logout</Button>
+          </div>
+        )}
+      </div>
+      
+      {!currentUser ? (
+        <Card className="mb-8">
           <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>Recipe Cost Calculator</CardTitle>
-              <Button onClick={toggleTheme} variant="outline">
-                {theme === 'light' ? '🌙' : '☀️'}
-              </Button>
-            </div>
+            <CardTitle>Login or Create Account</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList>
-                <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
-                <TabsTrigger value="recipes">Recipes</TabsTrigger>
-              </TabsList>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter username"
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password"
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                <Button onClick={handleLogin} className="w-full sm:w-auto">Login</Button>
+                <Button variant="outline" onClick={handleCreateAccount} className="w-full sm:w-auto">Create Account</Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <Tabs value={activeTab} onValueChange={handleTabChange} defaultValue="ingredients">
+            <TabsList className="w-full justify-start overflow-x-auto">
+              <TabsTrigger value="ingredients">Ingredients</TabsTrigger>
+              <TabsTrigger value="recipes">Recipes</TabsTrigger>
+              <TabsTrigger value="overhead">Overhead</TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="ingredients">
-                {/* Ingredient Management Form */}
-                <div className="space-y-4">
-                  <Input
-                    placeholder="Ingredient name"
-                    value={newIngredient.name || ''}
-                    onChange={(e) => setNewIngredient({ ...newIngredient, name: e.target.value })}
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Cost"
-                    value={newIngredient.cost || ''}
-                    onChange={(e) => setNewIngredient({ ...newIngredient, cost: parseFloat(e.target.value) })}
-                  />
-                  <Input
-                    type="number"
-                    placeholder="Quantity"
-                    value={newIngredient.quantity || ''}
-                    onChange={(e) => setNewIngredient({ ...newIngredient, quantity: parseFloat(e.target.value) })}
-                  />
-                  <Input
-                    placeholder="Unit"
-                    value={newIngredient.unit || defaultUnit}
-                    onChange={(e) => setNewIngredient({ ...newIngredient, unit: e.target.value as Unit })}
-                  />
-                  <Button onClick={handleAddIngredient}>
-                    {editingIngredientId ? 'Update Ingredient' : 'Add Ingredient'}
-                  </Button>
-                </div>
-
-                {/* Ingredients List */}
-                <div className="mt-4 space-y-2">
-                  {ingredients.map((ingredient) => (
-                    <div key={ingredient.id} className="flex justify-between items-center p-2 bg-gray-100 rounded">
+            <TabsContent value="ingredients">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ingredients Management</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                       <div>
-                        <span className="font-medium">{ingredient.name}</span>
-                        <span className="ml-2 text-gray-600">
-                          {ingredient.quantity} {ingredient.unit} - {ingredient.cost} {defaultCurrency}
-                        </span>
+                        <Label htmlFor="name">Name</Label>
+                        <Input
+                          id="name"
+                          value={newIngredient.name}
+                          onChange={(e) => setNewIngredient({ ...newIngredient, name: e.target.value })}
+                          placeholder="Ingredient name"
+                        />
                       </div>
                       <div>
-                        <Button variant="ghost" onClick={() => handleEditIngredient(ingredient)}>
-                          Edit
-                        </Button>
-                        <Button variant="destructive" onClick={() => handleDeleteIngredient(ingredient.id)}>
-                          Delete
+                        <Label htmlFor="price">Price</Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          value={newIngredient.price}
+                          onChange={(e) => setNewIngredient({ ...newIngredient, price: e.target.value })}
+                          placeholder="Price"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="amount">Amount</Label>
+                        <Input
+                          id="amount"
+                          type="number"
+                          value={newIngredient.amount}
+                          onChange={(e) => setNewIngredient({ ...newIngredient, amount: e.target.value })}
+                          placeholder="Amount"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="unit">Unit</Label>
+                        <Select
+                          value={newIngredient.unit}
+                          onValueChange={(value) => setNewIngredient({ ...newIngredient, unit: value as Unit })}
+                        >
+                          <SelectItem value="lb">Pounds (lb)</SelectItem>
+                          <SelectItem value="oz">Ounces (oz)</SelectItem>
+                          <SelectItem value="count">Count</SelectItem>
+                        </Select>
+                      </div>
+                      <div className="flex items-end">
+                        <Button onClick={addNewIngredient} className="w-full">
+                          {editingIngredient ? 'Update Ingredient' : 'Add Ingredient'}
                         </Button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </TabsContent>
 
-              <TabsContent value="recipes">
-                {/* Recipe Management Form */}
-                {/* Add recipe form implementation here */}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+                    <div className="overflow-x-auto">
+                      <ScrollArea className="h-[400px]">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left p-2">Name</th>
+                              <th className="text-left p-2">Price</th>
+                              <th className="text-left p-2">Amount</th>
+                              <th className="text-left p-2">Unit</th>
+                              <th className="text-left p-2">Unit Price</th>
+                              <th className="text-left p-2">Category</th>
+                              <th className="text-left p-2">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {ingredients.map((ingredient, index) => (
+                              <tr key={index} className="border-b">
+                                <td className="p-2">{ingredient.name}</td>
+                                <td className="p-2">${ingredient.price.toFixed(2)}</td>
+                                <td className="p-2">{ingredient.amount}</td>
+                                <td className="p-2">{ingredient.unit}</td>
+                                <td className="p-2">${ingredient.unitPrice.toFixed(4)}/oz</td>
+                                <td className="p-2">{ingredient.category}</td>
+                                <td className="p-2 space-x-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEditIngredient(index, ingredient)}
+                                  >
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => {
+                                      const newIngredients = [...ingredients];
+                                      newIngredients.splice(index, 1);
+                                      setIngredients(newIngredients);
+                                    }}
+                                  >
+                                    Delete
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </ScrollArea>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="recipes">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recipe Management</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <RecipeManagement
+                    recipes={recipes}
+                    ingredients={ingredients}
+                    onAddRecipe={handleAddRecipe}
+                    onUpdateRecipe={handleUpdateRecipe}
+                    onDeleteRecipe={handleDeleteRecipe}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="overhead">
+              <OverheadCalculator onOverheadCostChange={setOverheadCost} />
+            </TabsContent>
+          </Tabs>
+        </>
+      )}
+      <ThemeToggle />
     </div>
   );
-}; 
+};
+
+export default IngredientRecipeCalculator; 
