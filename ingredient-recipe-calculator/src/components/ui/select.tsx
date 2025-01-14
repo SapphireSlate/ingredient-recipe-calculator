@@ -16,14 +16,18 @@ interface SelectItemProps {
 export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(({ 
   children, 
   className = '', 
-  value,
+  value = '',
   onValueChange,
   onChange,
   ...props 
 }, ref) => {
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onValueChange?.(e.target.value);
-    onChange?.(e);
+    if (onValueChange) {
+      onValueChange(e.target.value);
+    }
+    if (onChange) {
+      onChange(e);
+    }
   };
 
   return (
@@ -39,6 +43,8 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(({
   );
 });
 
+Select.displayName = 'Select';
+
 export const SelectItem = React.forwardRef<HTMLOptionElement, SelectItemProps>(({ 
   children, 
   value, 
@@ -53,4 +59,6 @@ export const SelectItem = React.forwardRef<HTMLOptionElement, SelectItemProps>((
       {children}
     </option>
   );
-}); 
+});
+
+SelectItem.displayName = 'SelectItem'; 

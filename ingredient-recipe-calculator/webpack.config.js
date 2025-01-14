@@ -53,13 +53,38 @@ module.exports = {
     historyApiFallback: true,
     hot: true,
     port: 3000,
-    host: '0.0.0.0',
+    host: 'localhost',
     open: true,
     client: {
-      overlay: true,
+      overlay: {
+        errors: true,
+        warnings: false,
+      },
+      webSocketURL: 'auto://0.0.0.0:0/ws',
     },
     static: {
       directory: path.join(__dirname, 'public'),
+    },
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization",
+      "Access-Control-Allow-Credentials": "true"
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        pathRewrite: { '^/api': '' },
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+      },
+      '/dlnk': {
+        target: 'https://dlnk.one',
+        pathRewrite: { '^/dlnk': '' },
+        changeOrigin: true,
+        secure: true,
+      }
     },
   },
   devtool: 'source-map',

@@ -1,4 +1,4 @@
-export type Unit = 'lb' | 'oz' | 'count';
+export type Unit = 'lb' | 'oz' | 'g' | 'kg' | 'cup' | 'tbsp' | 'tsp' | 'ml' | 'l' | 'piece';
 export type Category = 'Dry Goods' | 'Dairy' | 'Produce' | 'Meat' | 'Other';
 
 export interface Ingredient {

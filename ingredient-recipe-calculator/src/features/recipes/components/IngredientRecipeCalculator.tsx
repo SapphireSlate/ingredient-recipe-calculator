@@ -131,6 +131,14 @@ const IngredientRecipeCalculator: React.FC = () => {
     setActiveTab(value);
   };
 
+  const calculateRecipeCost = (recipe: Recipe): number => {
+    return recipe.ingredients.reduce((total, recipeIngredient) => {
+      const ingredient = ingredients.find(i => i.name === recipeIngredient.ingredient);
+      if (!ingredient) return total;
+      return total + (ingredient.unitPrice * recipeIngredient.amount);
+    }, 0);
+  };
+
   return (
     <div className="container mx-auto p-4 pb-20">
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
@@ -312,7 +320,11 @@ const IngredientRecipeCalculator: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="overhead">
-              <OverheadCalculator onOverheadCostChange={setOverheadCost} />
+              <OverheadCalculator 
+                onOverheadCostChange={setOverheadCost}
+                recipes={recipes}
+                calculateRecipeCost={calculateRecipeCost}
+              />
             </TabsContent>
           </Tabs>
         </>

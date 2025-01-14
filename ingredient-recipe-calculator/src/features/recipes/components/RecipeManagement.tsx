@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, FormEvent } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Input } from "@components/ui/input";
 import { Button } from "@components/ui/button";
@@ -36,64 +36,95 @@ export const RecipeManagement: React.FC<Props> = ({
   const [newRecipeIngredient, setNewRecipeIngredient] = useState<NewRecipeIngredient>({
     ingredient: '',
     amount: '',
-    unit: 'lb',
+    unit: 'lb' as Unit,
   });
 
   const handleEditRecipe = (index: number, recipe: Recipe) => {
     setEditingRecipe({ index, recipe });
     setNewRecipe({
       name: recipe.name,
-      ingredients: recipe.ingredients,
+      ingredients: [...recipe.ingredients],
       yield: recipe.yield,
       monthlySales: recipe.monthlySales,
     });
   };
 
-  const handleAddIngredientToRecipe = () => {
-    if (newRecipeIngredient.ingredient && newRecipeIngredient.amount) {
-      setNewRecipe({
-        ...newRecipe,
-        ingredients: [
-          ...newRecipe.ingredients,
-          {
-            ingredient: newRecipeIngredient.ingredient,
-            amount: Number(newRecipeIngredient.amount),
-            unit: newRecipeIngredient.unit,
-          },
-        ],
+  const handleAddIngredientToRecipe = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const amount = parseFloat(newRecipeIngredient.amount.toString());
+    
+    if (newRecipeIngredient.ingredient && !isNaN(amount) && amount > 0) {
+      const newIngredient: RecipeIngredient = {
+        ingredient: newRecipeIngredient.ingredient,
+        amount: amount,
+        unit: newRecipeIngredient.unit,
+      };
+
+      setNewRecipe(prev => ({
+        ...prev,
+        ingredients: [...prev.ingredients, newIngredient],
+      }));
+
+      // Reset the ingredient form
+      setNewRecipeIngredient({
+        ingredient: '',
+        amount: '',
+        unit: 'lb' as Unit,
       });
-      setNewRecipeIngredient({ ingredient: '', amount: '', unit: 'lb' });
     }
   };
 
   const handleRemoveIngredientFromRecipe = (index: number) => {
-    const newIngredients = [...newRecipe.ingredients];
-    newIngredients.splice(index, 1);
-    setNewRecipe({ ...newRecipe, ingredients: newIngredients });
+    setNewRecipe(prev => ({
+      ...prev,
+      ingredients: prev.ingredients.filter((_, i) => i !== index),
+    }));
   };
 
-  const handleSaveRecipe = () => {
-    if (newRecipe.name && newRecipe.ingredients.length > 0) {
-      const recipe: Recipe = {
-        name: newRecipe.name,
-        ingredients: newRecipe.ingredients,
-        yield: Number(newRecipe.yield),
-        monthlySales: Number(newRecipe.monthlySales),
-      };
+  const validateRecipe = (recipe: NewRecipe): boolean => {
+    return (
+      recipe.name.trim() !== '' &&
+      recipe.ingredients.length > 0 &&
+      recipe.yield > 0 &&
+      recipe.monthlySales >= 0
+    );
+  };
 
-      if (editingRecipe) {
-        onUpdateRecipe(editingRecipe.index, recipe);
-        setEditingRecipe(null);
-      } else {
-        onAddRecipe(recipe);
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    try {
+      if (validateRecipe(newRecipe)) {
+        const recipe: Recipe = {
+          name: newRecipe.name.trim(),
+          ingredients: [...newRecipe.ingredients],
+          yield: Math.max(1, Number(newRecipe.yield)),
+          monthlySales: Math.max(0, Number(newRecipe.monthlySales)),
+        };
+
+        if (editingRecipe) {
+          await onUpdateRecipe(editingRecipe.index, recipe);
+          setEditingRecipe(null);
+        } else {
+          await onAddRecipe(recipe);
+        }
+
+        // Reset form
+        setNewRecipe({
+          name: '',
+          ingredients: [],
+          yield: 1,
+          monthlySales: 0,
+        });
+        
+        setNewRecipeIngredient({
+          ingredient: '',
+          amount: '',
+          unit: 'lb' as Unit,
+        });
       }
-
-      setNewRecipe({
-        name: '',
-        ingredients: [],
-        yield: 1,
-        monthlySales: 0,
-      });
+    } catch (error) {
+      console.error('Error saving recipe:', error);
     }
   };
 
@@ -101,52 +132,80 @@ export const RecipeManagement: React.FC<Props> = ({
     return recipe.ingredients.reduce((total, recipeIngredient) => {
       const ingredient = ingredients.find(i => i.name === recipeIngredient.ingredient);
       if (!ingredient) return total;
-      return total + (ingredient.unitPrice * Number(recipeIngredient.amount));
+      return total + (ingredient.unitPrice * recipeIngredient.amount);
     }, 0);
   };
 
   return (
-    <div className="space-y-6">
+    <form 
+      onSubmit={handleSubmit}
+      className="space-y-6"
+      autoComplete="off"
+    >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
-          <Label htmlFor="recipeName">Recipe Name</Label>
+          <Label htmlFor="recipe-name">Recipe Name</Label>
           <Input
-            id="recipeName"
+            id="recipe-name"
+            name="recipe-name"
+            type="text"
+            autoComplete="off"
+            aria-label="Recipe name"
             value={newRecipe.name}
             onChange={(e) => setNewRecipe({ ...newRecipe, name: e.target.value })}
             placeholder="Recipe name"
+            required
           />
         </div>
         <div>
-          <Label htmlFor="recipeYield">Yield</Label>
+          <Label htmlFor="recipe-yield">Yield</Label>
           <Input
-            id="recipeYield"
+            id="recipe-yield"
+            name="recipe-yield"
             type="number"
+            autoComplete="off"
+            aria-label="Recipe yield"
             value={newRecipe.yield}
             onChange={(e) => setNewRecipe({ ...newRecipe, yield: Number(e.target.value) })}
             placeholder="Recipe yield"
+            min="1"
+            required
           />
         </div>
         <div>
-          <Label htmlFor="monthlySales">Monthly Sales</Label>
+          <Label htmlFor="monthly-sales">Monthly Sales</Label>
           <Input
-            id="monthlySales"
+            id="monthly-sales"
+            name="monthly-sales"
             type="number"
+            autoComplete="off"
+            aria-label="Monthly sales"
             value={newRecipe.monthlySales}
             onChange={(e) => setNewRecipe({ ...newRecipe, monthlySales: Number(e.target.value) })}
             placeholder="Monthly sales"
+            min="0"
+            required
           />
         </div>
       </div>
 
       <div className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <Label htmlFor="ingredient">Ingredient</Label>
+            <Label htmlFor="ingredient-select">Ingredient</Label>
             <Select
+              id="ingredient-select"
+              name="ingredient-select"
               value={newRecipeIngredient.ingredient}
-              onValueChange={(value) => setNewRecipeIngredient({ ...newRecipeIngredient, ingredient: value })}
+              onValueChange={(value) => {
+                setNewRecipeIngredient(prev => ({
+                  ...prev,
+                  ingredient: value
+                }));
+              }}
+              aria-label="Select ingredient"
             >
+              <option value="">Select an ingredient</option>
               {ingredients.map((ingredient) => (
                 <SelectItem key={ingredient.name} value={ingredient.name}>
                   {ingredient.name}
@@ -155,17 +214,62 @@ export const RecipeManagement: React.FC<Props> = ({
             </Select>
           </div>
           <div>
-            <Label htmlFor="amount">Amount</Label>
+            <Label htmlFor="ingredient-amount">Amount</Label>
             <Input
-              id="amount"
+              id="ingredient-amount"
+              name="ingredient-amount"
               type="number"
+              autoComplete="off"
+              aria-label="Ingredient amount"
               value={newRecipeIngredient.amount}
-              onChange={(e) => setNewRecipeIngredient({ ...newRecipeIngredient, amount: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value;
+                setNewRecipeIngredient(prev => ({
+                  ...prev,
+                  amount: value
+                }));
+              }}
               placeholder="Amount"
+              min="0.01"
+              step="0.01"
             />
           </div>
+          <div>
+            <Label htmlFor="ingredient-unit">Unit</Label>
+            <Select
+              id="ingredient-unit"
+              name="ingredient-unit"
+              value={newRecipeIngredient.unit}
+              onValueChange={(value) => {
+                setNewRecipeIngredient(prev => ({
+                  ...prev,
+                  unit: value as Unit
+                }));
+              }}
+              aria-label="Select unit"
+            >
+              <SelectItem value="lb">lb</SelectItem>
+              <SelectItem value="oz">oz</SelectItem>
+              <SelectItem value="g">g</SelectItem>
+              <SelectItem value="kg">kg</SelectItem>
+              <SelectItem value="cup">cup</SelectItem>
+              <SelectItem value="tbsp">tbsp</SelectItem>
+              <SelectItem value="tsp">tsp</SelectItem>
+              <SelectItem value="ml">ml</SelectItem>
+              <SelectItem value="l">l</SelectItem>
+              <SelectItem value="piece">piece</SelectItem>
+            </Select>
+          </div>
           <div className="flex items-end">
-            <Button onClick={handleAddIngredientToRecipe} className="w-full">Add Ingredient</Button>
+            <Button 
+              type="button"
+              onClick={handleAddIngredientToRecipe} 
+              className="w-full"
+              disabled={!newRecipeIngredient.ingredient || !newRecipeIngredient.amount}
+              aria-label="Add ingredient to recipe"
+            >
+              Add Ingredient
+            </Button>
           </div>
         </div>
 
@@ -177,9 +281,11 @@ export const RecipeManagement: React.FC<Props> = ({
                 {ing.amount} {ing.unit} {ing.ingredient}
               </span>
               <Button
+                type="button"
                 variant="destructive"
                 size="sm"
                 onClick={() => handleRemoveIngredientFromRecipe(index)}
+                aria-label={`Remove ${ing.ingredient}`}
               >
                 Remove
               </Button>
@@ -188,7 +294,11 @@ export const RecipeManagement: React.FC<Props> = ({
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={handleSaveRecipe} className="w-full sm:w-auto">
+          <Button 
+            type="submit" 
+            className="w-full sm:w-auto"
+            disabled={!validateRecipe(newRecipe)}
+          >
             {editingRecipe ? 'Update Recipe' : 'Save Recipe'}
           </Button>
         </div>
@@ -225,16 +335,20 @@ export const RecipeManagement: React.FC<Props> = ({
                   <td className="p-2">{recipe.monthlySales}</td>
                   <td className="p-2 space-x-2">
                     <Button
+                      type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => handleEditRecipe(index, recipe)}
+                      aria-label={`Edit ${recipe.name}`}
                     >
                       Edit
                     </Button>
                     <Button
+                      type="button"
                       variant="destructive"
                       size="sm"
                       onClick={() => onDeleteRecipe(index)}
+                      aria-label={`Delete ${recipe.name}`}
                     >
                       Delete
                     </Button>
@@ -245,6 +359,6 @@ export const RecipeManagement: React.FC<Props> = ({
           </table>
         </ScrollArea>
       </div>
-    </div>
+    </form>
   );
 }; 
