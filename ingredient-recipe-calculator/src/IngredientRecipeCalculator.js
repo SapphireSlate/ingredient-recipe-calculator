@@ -8,36 +8,38 @@ import { ScrollArea } from "./components/ui/scroll-area";
 import { Label } from "./components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { createAccount, login, logout, getCurrentUser, saveUserData, getUserData } from './utils/auth';
+import { generateInitialPriceHistory, updatePriceHistory } from './utils/priceHistory';
 import OverheadCalculator from './OverheadCalculator';
+import { PriceHistoryGraph } from './features/ingredients/components/PriceHistoryGraph';
 
 const IngredientRecipeCalculator = () => {
   const [ingredients, setIngredients] = useState([
-    { name: 'All Purpose Flour', price: 5.00, amount: 5, unit: 'lb', unitPrice: 0.0625, category: 'Dry Goods' },
-    { name: 'Granulated Sugar', price: 4.00, amount: 4, unit: 'lb', unitPrice: 0.0625, category: 'Dry Goods' },
-    { name: 'Brown Sugar', price: 4.50, amount: 4, unit: 'lb', unitPrice: 0.0703, category: 'Dry Goods' },
-    { name: 'Powdered Sugar', price: 3.50, amount: 2, unit: 'lb', unitPrice: 0.1094, category: 'Dry Goods' },
-    { name: 'Cake Flour', price: 3.50, amount: 2, unit: 'lb', unitPrice: 0.1094, category: 'Dry Goods' },
-    { name: 'Butter', price: 3.50, amount: 1, unit: 'lb', unitPrice: 0.2188, category: 'Dairy' },
-    { name: 'Eggs', price: 3.00, amount: 12, unit: 'count', unitPrice: 0.25, category: 'Dairy' },
-    { name: 'Cream Cheese', price: 2.50, amount: 8, unit: 'oz', unitPrice: 0.3125, category: 'Dairy' },
-    { name: 'Heavy Whipping Cream', price: 3.50, amount: 16, unit: 'oz', unitPrice: 0.2188, category: 'Dairy' },
-    { name: 'Sour Cream', price: 2.00, amount: 16, unit: 'oz', unitPrice: 0.125, category: 'Dairy' },
-    { name: 'Milk', price: 3.50, amount: 128, unit: 'oz', unitPrice: 0.0273, category: 'Dairy' },
-    { name: 'Buttermilk', price: 2.50, amount: 32, unit: 'oz', unitPrice: 0.0781, category: 'Dairy' },
-    { name: 'Vanilla Extract', price: 6.50, amount: 4, unit: 'oz', unitPrice: 1.625, category: 'Flavorings' },
-    { name: 'Almond Extract', price: 4.50, amount: 2, unit: 'oz', unitPrice: 2.25, category: 'Flavorings' },
-    { name: 'Lemon Extract', price: 4.00, amount: 2, unit: 'oz', unitPrice: 2, category: 'Flavorings' },
-    { name: 'Vegetable Oil', price: 3.00, amount: 48, unit: 'oz', unitPrice: 0.0625, category: 'Oils' },
-    { name: 'Canola Oil', price: 3.50, amount: 48, unit: 'oz', unitPrice: 0.0729, category: 'Oils' },
-    { name: 'Cocoa Powder', price: 3.50, amount: 8, unit: 'oz', unitPrice: 0.4375, category: 'Dry Goods' },
-    { name: 'Baking Powder', price: 2.50, amount: 8, unit: 'oz', unitPrice: 0.3125, category: 'Dry Goods' },
-    { name: 'Baking Soda', price: 1.00, amount: 16, unit: 'oz', unitPrice: 0.0625, category: 'Dry Goods' },
-    { name: 'Salt', price: 1.00, amount: 26, unit: 'oz', unitPrice: 0.0385, category: 'Dry Goods' },
-    { name: 'Chocolate Chips', price: 3.50, amount: 12, unit: 'oz', unitPrice: 0.2917, category: 'Add-ins' },
-    { name: 'Nuts (Assorted)', price: 6.00, amount: 16, unit: 'oz', unitPrice: 0.375, category: 'Add-ins' },
-    { name: 'Cream of Tartar', price: 3.00, amount: 3, unit: 'oz', unitPrice: 1, category: 'Dry Goods' },
-    { name: 'Cornstarch', price: 2.00, amount: 16, unit: 'oz', unitPrice: 0.125, category: 'Dry Goods' },
-    { name: 'Yeast', price: 4.00, amount: 4, unit: 'oz', unitPrice: 1, category: 'Dry Goods' },
+    { name: 'All Purpose Flour', price: 5.00, amount: 5, unit: 'lb', unitPrice: 0.0625, category: 'Dry Goods', priceHistory: generateInitialPriceHistory(5.00) },
+    { name: 'Granulated Sugar', price: 4.00, amount: 4, unit: 'lb', unitPrice: 0.0625, category: 'Dry Goods', priceHistory: generateInitialPriceHistory(4.00) },
+    { name: 'Brown Sugar', price: 4.50, amount: 4, unit: 'lb', unitPrice: 0.0703, category: 'Dry Goods', priceHistory: generateInitialPriceHistory(4.50) },
+    { name: 'Powdered Sugar', price: 3.50, amount: 2, unit: 'lb', unitPrice: 0.1094, category: 'Dry Goods', priceHistory: generateInitialPriceHistory(3.50) },
+    { name: 'Cake Flour', price: 3.50, amount: 2, unit: 'lb', unitPrice: 0.1094, category: 'Dry Goods', priceHistory: generateInitialPriceHistory(3.50) },
+    { name: 'Butter', price: 3.50, amount: 1, unit: 'lb', unitPrice: 0.2188, category: 'Dairy', priceHistory: generateInitialPriceHistory(3.50) },
+    { name: 'Eggs', price: 3.00, amount: 12, unit: 'count', unitPrice: 0.25, category: 'Dairy', priceHistory: generateInitialPriceHistory(3.00) },
+    { name: 'Cream Cheese', price: 2.50, amount: 8, unit: 'oz', unitPrice: 0.3125, category: 'Dairy', priceHistory: generateInitialPriceHistory(2.50) },
+    { name: 'Heavy Whipping Cream', price: 3.50, amount: 16, unit: 'oz', unitPrice: 0.2188, category: 'Dairy', priceHistory: generateInitialPriceHistory(3.50) },
+    { name: 'Sour Cream', price: 2.00, amount: 16, unit: 'oz', unitPrice: 0.125, category: 'Dairy', priceHistory: generateInitialPriceHistory(2.00) },
+    { name: 'Milk', price: 3.50, amount: 128, unit: 'oz', unitPrice: 0.0273, category: 'Dairy', priceHistory: generateInitialPriceHistory(3.50) },
+    { name: 'Buttermilk', price: 2.50, amount: 32, unit: 'oz', unitPrice: 0.0781, category: 'Dairy', priceHistory: generateInitialPriceHistory(2.50) },
+    { name: 'Vanilla Extract', price: 6.50, amount: 4, unit: 'oz', unitPrice: 1.625, category: 'Flavorings', priceHistory: generateInitialPriceHistory(6.50) },
+    { name: 'Almond Extract', price: 4.50, amount: 2, unit: 'oz', unitPrice: 2.25, category: 'Flavorings', priceHistory: generateInitialPriceHistory(4.50) },
+    { name: 'Lemon Extract', price: 4.00, amount: 2, unit: 'oz', unitPrice: 2, category: 'Flavorings', priceHistory: generateInitialPriceHistory(4.00) },
+    { name: 'Vegetable Oil', price: 3.00, amount: 48, unit: 'oz', unitPrice: 0.0625, category: 'Oils', priceHistory: generateInitialPriceHistory(3.00) },
+    { name: 'Canola Oil', price: 3.50, amount: 48, unit: 'oz', unitPrice: 0.0729, category: 'Oils', priceHistory: generateInitialPriceHistory(3.50) },
+    { name: 'Cocoa Powder', price: 3.50, amount: 8, unit: 'oz', unitPrice: 0.4375, category: 'Dry Goods', priceHistory: generateInitialPriceHistory(3.50) },
+    { name: 'Baking Powder', price: 2.50, amount: 8, unit: 'oz', unitPrice: 0.3125, category: 'Dry Goods', priceHistory: generateInitialPriceHistory(2.50) },
+    { name: 'Baking Soda', price: 1.00, amount: 16, unit: 'oz', unitPrice: 0.0625, category: 'Dry Goods', priceHistory: generateInitialPriceHistory(1.00) },
+    { name: 'Salt', price: 1.00, amount: 26, unit: 'oz', unitPrice: 0.0385, category: 'Dry Goods', priceHistory: generateInitialPriceHistory(1.00) },
+    { name: 'Chocolate Chips', price: 3.50, amount: 12, unit: 'oz', unitPrice: 0.2917, category: 'Add-ins', priceHistory: generateInitialPriceHistory(3.50) },
+    { name: 'Nuts (Assorted)', price: 6.00, amount: 16, unit: 'oz', unitPrice: 0.375, category: 'Add-ins', priceHistory: generateInitialPriceHistory(6.00) },
+    { name: 'Cream of Tartar', price: 3.00, amount: 3, unit: 'oz', unitPrice: 1, category: 'Dry Goods', priceHistory: generateInitialPriceHistory(3.00) },
+    { name: 'Cornstarch', price: 2.00, amount: 16, unit: 'oz', unitPrice: 0.125, category: 'Dry Goods', priceHistory: generateInitialPriceHistory(2.00) },
+    { name: 'Yeast', price: 4.00, amount: 4, unit: 'oz', unitPrice: 1, category: 'Dry Goods', priceHistory: generateInitialPriceHistory(4.00) }
   ]);
 
   const [recipes, setRecipes] = useState([]);
@@ -103,7 +105,7 @@ const IngredientRecipeCalculator = () => {
     logout();
     setCurrentUser(null);
     setIngredients([
-      { name: 'All Purpose Flour', price: 5.00, amount: 5, unit: 'lb', unitPrice: 0.0625, category: 'Dry Goods' },
+      { name: 'All Purpose Flour', price: 5.00, amount: 5, unit: 'lb', unitPrice: 0.0625, category: 'Dry Goods', priceHistory: generateInitialPriceHistory(5.00) },
       // ... (rest of your initial ingredients)
     ]);
     setRecipes([]);
@@ -129,7 +131,11 @@ const addNewIngredient = () => {
       parseFloat(newIngredient.amount),
       newIngredient.unit
     );
-    setIngredients([...ingredients, {...newIngredient, unitPrice}]);
+    setIngredients([...ingredients, {
+      ...newIngredient,
+      unitPrice,
+      priceHistory: generateInitialPriceHistory(parseFloat(newIngredient.price))
+    }]);
     setNewIngredient({ name: '', price: '', amount: '', unit: '' });
   }
 };
@@ -137,6 +143,19 @@ const addNewIngredient = () => {
 const updateIngredient = (index, field, value) => {
   const updatedIngredients = [...ingredients];
   updatedIngredients[index][field] = value;
+  
+  // If updating price, update price history
+  if (field === 'price') {
+    if (!updatedIngredients[index].priceHistory) {
+      updatedIngredients[index].priceHistory = generateInitialPriceHistory(parseFloat(value));
+    } else {
+      updatedIngredients[index].priceHistory = updatePriceHistory(
+        updatedIngredients[index].priceHistory,
+        parseFloat(value)
+      );
+    }
+  }
+  
   updatedIngredients[index].unitPrice = calculateUnitPrice(
     updatedIngredients[index].price,
     updatedIngredients[index].amount,
@@ -287,35 +306,41 @@ return (
           <ScrollArea className="h-[400px] pr-4 mb-6">
             <div className="space-y-4">
               {ingredients.map((ingredient, index) => (
-                <div key={index} className="grid grid-cols-5 gap-2">
-                  <Input 
-                    value={ingredient.name || ''} 
-                    onChange={(e) => updateIngredient(index, 'name', e.target.value)}
+                <div key={index}>
+                  <div className="grid grid-cols-5 gap-2">
+                    <Input 
+                      value={ingredient.name || ''} 
+                      onChange={(e) => updateIngredient(index, 'name', e.target.value)}
+                    />
+                    <Input 
+                      type="number" 
+                      value={ingredient.price || ''} 
+                      onChange={(e) => updateIngredient(index, 'price', parseFloat(e.target.value))}
+                    />
+                    <Input 
+                      type="number" 
+                      value={ingredient.amount || ''} 
+                      onChange={(e) => updateIngredient(index, 'amount', parseFloat(e.target.value))}
+                    />
+                    <Select 
+                      value={ingredient.unit || ''} 
+                      onValueChange={(value) => updateIngredient(index, 'unit', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Unit" />
+                      </SelectTrigger>
+                      <SelectContent className="select-content">
+                        {units.map(unit => (
+                          <SelectItem key={unit} value={unit} className="select-item">{unit}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input value={(ingredient.unitPrice || 0).toFixed(4)} readOnly />
+                  </div>
+                  <PriceHistoryGraph 
+                    data={ingredient.priceHistory || []} 
+                    ingredientName={ingredient.name}
                   />
-                  <Input 
-                    type="number" 
-                    value={ingredient.price || ''} 
-                    onChange={(e) => updateIngredient(index, 'price', parseFloat(e.target.value))}
-                  />
-                  <Input 
-                    type="number" 
-                    value={ingredient.amount || ''} 
-                    onChange={(e) => updateIngredient(index, 'amount', parseFloat(e.target.value))}
-                  />
-                  <Select 
-                    value={ingredient.unit || ''} 
-                    onValueChange={(value) => updateIngredient(index, 'unit', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Unit" />
-                    </SelectTrigger>
-                    <SelectContent className="select-content">
-                      {units.map(unit => (
-                        <SelectItem key={unit} value={unit} className="select-item">{unit}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input value={(ingredient.unitPrice || 0).toFixed(4)} readOnly />
                 </div>
               ))}
             </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Input } from "@components/ui/input";
 import { Label } from "@components/ui/label";
@@ -22,34 +22,26 @@ export const OverheadCalculator: React.FC<Props> = ({
   const [other, setOther] = useState<string>('');
   const [profitMargin, setProfitMargin] = useState<string>('30'); // Default 30% profit margin
 
-  const calculateTotal = () => {
-    const total = [rent, utilities, labor, other]
+  const total = useMemo(() => {
+    return [rent, utilities, labor, other]
       .map(value => Number(value) || 0)
       .reduce((sum, value) => sum + value, 0);
-    onOverheadCostChange(total);
-    return total;
-  };
+  }, [rent, utilities, labor, other]);
 
-  const calculateSuggestedPrices = () => {
-    const monthlyOverhead = calculateTotal();
+  useEffect(() => {
+    onOverheadCostChange(total);
+  }, [total, onOverheadCostChange]);
+
+  const suggestedPrices = useMemo(() => {
     const totalMonthlySales = recipes.reduce((sum, recipe) => sum + recipe.monthlySales, 0);
     
     return recipes.map(recipe => {
-      // Calculate base cost per batch (ingredients)
       const ingredientCost = calculateRecipeCost(recipe);
-      
-      // Calculate overhead cost per batch
       const recipePortionOfSales = recipe.monthlySales / (totalMonthlySales || 1);
-      const overheadPerMonth = monthlyOverhead * recipePortionOfSales;
+      const overheadPerMonth = total * recipePortionOfSales;
       const overheadPerBatch = overheadPerMonth / (recipe.monthlySales || 1);
-      
-      // Calculate total cost per batch
       const totalCostPerBatch = ingredientCost + overheadPerBatch;
-      
-      // Calculate cost per serving
       const costPerServing = totalCostPerBatch / recipe.yield;
-      
-      // Calculate suggested price with profit margin
       const profitMultiplier = 1 + (Number(profitMargin) / 100);
       const suggestedPrice = costPerServing * profitMultiplier;
 
@@ -61,7 +53,7 @@ export const OverheadCalculator: React.FC<Props> = ({
         suggestedPrice
       };
     });
-  };
+  }, [recipes, calculateRecipeCost, total, profitMargin]);
 
   return (
     <div className="space-y-6">
@@ -131,7 +123,7 @@ export const OverheadCalculator: React.FC<Props> = ({
             </div>
             <div className="pt-4">
               <p className="text-lg font-semibold">
-                Total Monthly Overhead: ${calculateTotal().toFixed(2)}
+                Total Monthly Overhead: ${total.toFixed(2)}
               </p>
             </div>
           </div>
@@ -145,7 +137,7 @@ export const OverheadCalculator: React.FC<Props> = ({
         <CardContent>
           <ScrollArea className="h-[400px] w-full">
             <div className="space-y-6">
-              {calculateSuggestedPrices().map(({
+              {suggestedPrices.map(({
                 recipe,
                 ingredientCost,
                 overheadPerBatch,

@@ -1,18 +1,21 @@
 export type Unit = 'lb' | 'oz' | 'g' | 'kg' | 'cup' | 'tbsp' | 'tsp' | 'ml' | 'l' | 'piece';
-export type Category = 'Dry Goods' | 'Dairy' | 'Produce' | 'Meat' | 'Other';
+
+export type Category = 'Produce' | 'Meat' | 'Dairy' | 'Dry Goods' | 'Spices' | 'Other';
 
 export interface Ingredient {
+  id: string;
   name: string;
-  price: number;
-  amount: number;
+  price: string;
+  amount: string;
   unit: Unit;
-  unitPrice: number;
   category: Category;
+  unitPrice: number;
 }
 
 export interface NewIngredient {
   name: string;
-  price: string | number;
-  amount: string | number;
+  price: string;
+  amount: string;
   unit: Unit;
+  category: Category;
 } 

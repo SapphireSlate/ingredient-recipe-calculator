@@ -1,17 +1,12 @@
-export interface User {
-  id: string;
-  username: string;
-  email?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { Ingredient } from '@/features/ingredients/types';
+import { Recipe } from '@/features/recipes/types';
 
-export interface UserCredentials {
+export interface User {
   username: string;
-  password: string;
+  id: string;
 }
 
 export interface UserData {
-  ingredients: any[]; // Will be replaced with proper types
-  recipes: any[]; // Will be replaced with proper types
+  ingredients: Ingredient[];
+  recipes: Recipe[];
 } 

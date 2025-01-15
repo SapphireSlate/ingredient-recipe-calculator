@@ -1,11 +1,9 @@
-import React, { useState, FormEvent } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@components/ui/card";
 import { Input } from "@components/ui/input";
 import { Button } from "@components/ui/button";
-import { Select, SelectItem } from "@components/ui/select";
-import { ScrollArea } from "@components/ui/scroll-area";
 import { Label } from "@components/ui/label";
-
+import { ScrollArea } from "@components/ui/scroll-area";
 import { Recipe, NewRecipe, RecipeIngredient, NewRecipeIngredient } from '../types';
 import { Ingredient, Unit } from '@features/ingredients/types';
 
@@ -16,6 +14,61 @@ interface Props {
   onUpdateRecipe: (index: number, recipe: Recipe) => void;
   onDeleteRecipe: (index: number) => void;
 }
+
+const validateRecipe = (recipe: NewRecipe, existingRecipes: Recipe[], currentEditingId?: string): { isValid: boolean; error?: string } => {
+  // Check for empty name
+  if (recipe.name.trim() === '') {
+    return { isValid: false, error: 'Recipe name is required' };
+  }
+
+  // Check for duplicate recipe name
+  const isDuplicateName = existingRecipes.some(
+    existing => existing.name.toLowerCase() === recipe.name.trim().toLowerCase() 
+      && existing.id !== currentEditingId
+  );
+  if (isDuplicateName) {
+    return { isValid: false, error: 'A recipe with this name already exists' };
+  }
+
+  // Check for empty ingredients
+  if (recipe.ingredients.length === 0) {
+    return { isValid: false, error: 'At least one ingredient is required' };
+  }
+
+  // Check for duplicate ingredients in the recipe
+  const ingredientNames = recipe.ingredients.map(ing => ing.ingredient.toLowerCase());
+  const hasDuplicateIngredients = ingredientNames.length !== new Set(ingredientNames).size;
+  if (hasDuplicateIngredients) {
+    return { isValid: false, error: 'Each ingredient can only be used once in a recipe' };
+  }
+
+  // Check for valid numbers
+  if (recipe.yield <= 0) {
+    return { isValid: false, error: 'Yield must be greater than 0' };
+  }
+  if (recipe.monthlySales < 0) {
+    return { isValid: false, error: 'Monthly sales cannot be negative' };
+  }
+
+  return { isValid: true };
+};
+
+// Add validation for unique ingredient names
+const validateIngredientName = (name: string, existingIngredients: Ingredient[]): { isValid: boolean; error?: string } => {
+  if (!name.trim()) {
+    return { isValid: false, error: 'Ingredient name is required' };
+  }
+
+  const isDuplicateName = existingIngredients.some(
+    existing => existing.name.toLowerCase() === name.trim().toLowerCase()
+  );
+
+  if (isDuplicateName) {
+    return { isValid: false, error: 'An ingredient with this name already exists' };
+  }
+
+  return { isValid: true };
+};
 
 export const RecipeManagement: React.FC<Props> = ({
   recipes,
@@ -29,6 +82,8 @@ export const RecipeManagement: React.FC<Props> = ({
     ingredients: [],
     yield: 1,
     monthlySales: 0,
+    prepTime: 0,
+    shelfLife: 1,
   });
 
   const [editingRecipe, setEditingRecipe] = useState<{ index: number; recipe: Recipe } | null>(null);
@@ -39,6 +94,14 @@ export const RecipeManagement: React.FC<Props> = ({
     unit: 'lb' as Unit,
   });
 
+  const [selectedRecipeForScaling, setSelectedRecipeForScaling] = useState<Recipe | null>(null);
+  const [scaleFactor, setScaleFactor] = useState<number>(1);
+  const [targetServings, setTargetServings] = useState<number>(1);
+  const [error, setError] = useState<string>('');
+
+  // Add hover message state
+  const [hoverMessage, setHoverMessage] = useState<string>('');
+
   const handleEditRecipe = (index: number, recipe: Recipe) => {
     setEditingRecipe({ index, recipe });
     setNewRecipe({
@@ -46,12 +109,26 @@ export const RecipeManagement: React.FC<Props> = ({
       ingredients: [...recipe.ingredients],
       yield: recipe.yield,
       monthlySales: recipe.monthlySales,
+      prepTime: recipe.prepTime,
+      shelfLife: recipe.shelfLife,
     });
   };
 
   const handleAddIngredientToRecipe = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
+    setError('');
+    
     const amount = parseFloat(newRecipeIngredient.amount.toString());
+    
+    // Check if ingredient already exists in recipe
+    const isDuplicateIngredient = newRecipe.ingredients.some(
+      ing => ing.ingredient.toLowerCase() === newRecipeIngredient.ingredient.toLowerCase()
+    );
+
+    if (isDuplicateIngredient) {
+      setError('This ingredient is already in the recipe');
+      return;
+    }
     
     if (newRecipeIngredient.ingredient && !isNaN(amount) && amount > 0) {
       const newIngredient: RecipeIngredient = {
@@ -81,50 +158,59 @@ export const RecipeManagement: React.FC<Props> = ({
     }));
   };
 
-  const validateRecipe = (recipe: NewRecipe): boolean => {
-    return (
-      recipe.name.trim() !== '' &&
-      recipe.ingredients.length > 0 &&
-      recipe.yield > 0 &&
-      recipe.monthlySales >= 0
-    );
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError('');
     
     try {
-      if (validateRecipe(newRecipe)) {
-        const recipe: Recipe = {
-          name: newRecipe.name.trim(),
-          ingredients: [...newRecipe.ingredients],
-          yield: Math.max(1, Number(newRecipe.yield)),
-          monthlySales: Math.max(0, Number(newRecipe.monthlySales)),
-        };
+      const validation = validateRecipe(
+        newRecipe, 
+        recipes, 
+        editingRecipe?.recipe.id
+      );
 
-        if (editingRecipe) {
-          await onUpdateRecipe(editingRecipe.index, recipe);
-          setEditingRecipe(null);
-        } else {
-          await onAddRecipe(recipe);
-        }
-
-        // Reset form
-        setNewRecipe({
-          name: '',
-          ingredients: [],
-          yield: 1,
-          monthlySales: 0,
-        });
-        
-        setNewRecipeIngredient({
-          ingredient: '',
-          amount: '',
-          unit: 'lb' as Unit,
-        });
+      if (!validation.isValid) {
+        setError(validation.error || 'Invalid recipe');
+        return;
       }
+
+      const recipe: Recipe = {
+        id: editingRecipe?.recipe.id || crypto.randomUUID(),
+        name: newRecipe.name.trim(),
+        ingredients: [...newRecipe.ingredients],
+        yield: Math.max(1, Number(newRecipe.yield)),
+        monthlySales: Math.max(0, Number(newRecipe.monthlySales)),
+        prepTime: Math.max(0, Number(newRecipe.prepTime)),
+        shelfLife: Math.max(1, Number(newRecipe.shelfLife)),
+      };
+
+      if (editingRecipe) {
+        await onUpdateRecipe(editingRecipe.index, recipe);
+        setEditingRecipe(null);
+      } else {
+        await onAddRecipe(recipe);
+      }
+
+      // Reset form
+      setNewRecipe({
+        name: '',
+        ingredients: [],
+        yield: 1,
+        monthlySales: 0,
+        prepTime: 0,
+        shelfLife: 1,
+      });
+      
+      setNewRecipeIngredient({
+        ingredient: '',
+        amount: '',
+        unit: 'lb' as Unit,
+      });
+      
+      setError('');
     } catch (error) {
       console.error('Error saving recipe:', error);
+      setError('Failed to save recipe');
     }
   };
 
@@ -136,12 +222,44 @@ export const RecipeManagement: React.FC<Props> = ({
     }, 0);
   };
 
+  // Update the ingredient selection handler
+  const handleIngredientSelect = (value: string) => {
+    setError('');
+    setNewRecipeIngredient(prev => ({
+      ...prev,
+      ingredient: value
+    }));
+  };
+
+  // Update the button's disabled state and hover message
+  const getSubmitButtonState = () => {
+    const validation = validateRecipe(newRecipe, recipes, editingRecipe?.recipe.id);
+    return { isDisabled: !validation.isValid, error: validation.error || '' };
+  };
+
+  const handleMouseEnter = () => {
+    const { error } = getSubmitButtonState();
+    setHoverMessage(error);
+  };
+
+  const handleMouseLeave = () => {
+    setHoverMessage('');
+  };
+
+  const { isDisabled } = getSubmitButtonState();
+
   return (
     <form 
       onSubmit={handleSubmit}
       className="space-y-6"
       autoComplete="off"
     >
+      {error && (
+        <div className="bg-destructive/15 text-destructive px-4 py-2 rounded-md">
+          {error}
+        </div>
+      )}
+      
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <Label htmlFor="recipe-name">Recipe Name</Label>
@@ -187,31 +305,63 @@ export const RecipeManagement: React.FC<Props> = ({
             required
           />
         </div>
+        <div>
+          <Label htmlFor="prep-time">Prep Time (minutes)</Label>
+          <Input
+            id="prep-time"
+            name="prep-time"
+            type="number"
+            autoComplete="off"
+            aria-label="Preparation time in minutes"
+            value={newRecipe.prepTime}
+            onChange={(e) => setNewRecipe({ ...newRecipe, prepTime: Number(e.target.value) })}
+            placeholder="Prep time in minutes"
+            min="0"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="shelf-life">Shelf Life (days)</Label>
+          <Input
+            id="shelf-life"
+            name="shelf-life"
+            type="number"
+            autoComplete="off"
+            aria-label="Shelf life in days"
+            value={newRecipe.shelfLife}
+            onChange={(e) => setNewRecipe({ ...newRecipe, shelfLife: Number(e.target.value) })}
+            placeholder="Shelf life in days"
+            min="1"
+            required
+          />
+        </div>
       </div>
 
       <div className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <Label htmlFor="ingredient-select">Ingredient</Label>
-            <Select
+            <select
               id="ingredient-select"
               name="ingredient-select"
               value={newRecipeIngredient.ingredient}
-              onValueChange={(value) => {
-                setNewRecipeIngredient(prev => ({
-                  ...prev,
-                  ingredient: value
-                }));
-              }}
+              onChange={(e) => handleIngredientSelect(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Select ingredient"
             >
               <option value="">Select an ingredient</option>
-              {ingredients.map((ingredient) => (
-                <SelectItem key={ingredient.name} value={ingredient.name}>
-                  {ingredient.name}
-                </SelectItem>
-              ))}
-            </Select>
+              {ingredients
+                .filter(ingredient => 
+                  !newRecipe.ingredients.some(
+                    recipeIng => recipeIng.ingredient.toLowerCase() === ingredient.name.toLowerCase()
+                  )
+                )
+                .map((ingredient) => (
+                  <option key={ingredient.name} value={ingredient.name}>
+                    {ingredient.name}
+                  </option>
+                ))}
+            </select>
           </div>
           <div>
             <Label htmlFor="ingredient-amount">Amount</Label>
@@ -236,29 +386,30 @@ export const RecipeManagement: React.FC<Props> = ({
           </div>
           <div>
             <Label htmlFor="ingredient-unit">Unit</Label>
-            <Select
+            <select
               id="ingredient-unit"
               name="ingredient-unit"
               value={newRecipeIngredient.unit}
-              onValueChange={(value) => {
+              onChange={(e) => {
                 setNewRecipeIngredient(prev => ({
                   ...prev,
-                  unit: value as Unit
+                  unit: e.target.value as Unit
                 }));
               }}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Select unit"
             >
-              <SelectItem value="lb">lb</SelectItem>
-              <SelectItem value="oz">oz</SelectItem>
-              <SelectItem value="g">g</SelectItem>
-              <SelectItem value="kg">kg</SelectItem>
-              <SelectItem value="cup">cup</SelectItem>
-              <SelectItem value="tbsp">tbsp</SelectItem>
-              <SelectItem value="tsp">tsp</SelectItem>
-              <SelectItem value="ml">ml</SelectItem>
-              <SelectItem value="l">l</SelectItem>
-              <SelectItem value="piece">piece</SelectItem>
-            </Select>
+              <option value="lb">lb</option>
+              <option value="oz">oz</option>
+              <option value="g">g</option>
+              <option value="kg">kg</option>
+              <option value="cup">cup</option>
+              <option value="tbsp">tbsp</option>
+              <option value="tsp">tsp</option>
+              <option value="ml">ml</option>
+              <option value="l">l</option>
+              <option value="piece">piece</option>
+            </select>
           </div>
           <div className="flex items-end">
             <Button 
@@ -294,13 +445,34 @@ export const RecipeManagement: React.FC<Props> = ({
         </div>
 
         <div className="flex justify-end">
-          <Button 
-            type="submit" 
-            className="w-full sm:w-auto"
-            disabled={!validateRecipe(newRecipe)}
+          <div 
+            className="relative inline-block"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
           >
-            {editingRecipe ? 'Update Recipe' : 'Save Recipe'}
-          </Button>
+            <Button 
+              type="submit" 
+              className="w-full sm:w-auto"
+              disabled={isDisabled}
+            >
+              {editingRecipe ? 'Update Recipe' : 'Save Recipe'}
+            </Button>
+            {hoverMessage && (
+              <div 
+                className="absolute z-50 p-2 bg-popover text-popover-foreground rounded shadow-lg text-sm max-w-xs break-words"
+                style={{
+                  bottom: '100%',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  marginBottom: '0.5rem',
+                  width: 'max-content',
+                  minWidth: '200px'
+                }}
+              >
+                {hoverMessage}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -314,6 +486,8 @@ export const RecipeManagement: React.FC<Props> = ({
                 <th className="text-left p-2">Cost</th>
                 <th className="text-left p-2">Yield</th>
                 <th className="text-left p-2">Monthly Sales</th>
+                <th className="text-left p-2">Prep Time</th>
+                <th className="text-left p-2">Shelf Life</th>
                 <th className="text-left p-2">Actions</th>
               </tr>
             </thead>
@@ -333,6 +507,8 @@ export const RecipeManagement: React.FC<Props> = ({
                   <td className="p-2">${calculateRecipeCost(recipe).toFixed(2)}</td>
                   <td className="p-2">{recipe.yield}</td>
                   <td className="p-2">{recipe.monthlySales}</td>
+                  <td className="p-2">{recipe.prepTime} mins</td>
+                  <td className="p-2">{recipe.shelfLife} days</td>
                   <td className="p-2 space-x-2">
                     <Button
                       type="button"
@@ -359,6 +535,110 @@ export const RecipeManagement: React.FC<Props> = ({
           </table>
         </ScrollArea>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recipe Scaling Calculator</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="scale-recipe">Select Recipe</Label>
+                <select
+                  id="scale-recipe"
+                  name="scale-recipe"
+                  value={selectedRecipeForScaling?.name || ''}
+                  onChange={(e) => {
+                    const recipe = recipes.find(r => r.name === e.target.value);
+                    setSelectedRecipeForScaling(recipe || null);
+                  }}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Select recipe to scale"
+                >
+                  <option value="">Select a recipe</option>
+                  {recipes.map((recipe) => (
+                    <option key={recipe.name} value={recipe.name}>
+                      {recipe.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="scale-factor">Scale Factor</Label>
+                <Input
+                  id="scale-factor"
+                  name="scale-factor"
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  value={scaleFactor}
+                  onChange={(e) => setScaleFactor(Number(e.target.value))}
+                  placeholder="Enter scale factor (e.g., 2 for double)"
+                />
+              </div>
+              <div>
+                <Label htmlFor="scale-servings">Target Servings</Label>
+                <Input
+                  id="scale-servings"
+                  name="scale-servings"
+                  type="number"
+                  min="1"
+                  value={targetServings}
+                  onChange={(e) => {
+                    const servings = Number(e.target.value);
+                    setTargetServings(servings);
+                    if (selectedRecipeForScaling) {
+                      setScaleFactor(servings / selectedRecipeForScaling.yield);
+                    }
+                  }}
+                  placeholder="Enter target number of servings"
+                />
+              </div>
+            </div>
+
+            {selectedRecipeForScaling && (
+              <div className="mt-6">
+                <h4 className="font-medium mb-4">Scaled Recipe: {selectedRecipeForScaling.name}</h4>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Original Yield</p>
+                      <p className="font-medium">{selectedRecipeForScaling.yield} servings</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Scaled Yield</p>
+                      <p className="font-medium">{Math.round(selectedRecipeForScaling.yield * scaleFactor)} servings</p>
+                    </div>
+                  </div>
+                  
+                  <div className="border rounded-md p-4">
+                    <h5 className="font-medium mb-2">Scaled Ingredients</h5>
+                    <div className="space-y-2">
+                      {selectedRecipeForScaling.ingredients.map((ing, index) => (
+                        <div key={index} className="text-sm">
+                          {(ing.amount * scaleFactor).toFixed(2)} {ing.unit} {ing.ingredient}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Original Cost</p>
+                      <p className="font-medium">${calculateRecipeCost(selectedRecipeForScaling).toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Scaled Cost</p>
+                      <p className="font-medium">${(calculateRecipeCost(selectedRecipeForScaling) * scaleFactor).toFixed(2)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </form>
   );
 }; 
