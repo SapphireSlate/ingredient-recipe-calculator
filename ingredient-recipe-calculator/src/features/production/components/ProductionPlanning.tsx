@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import * as XLSX from 'xlsx';
+import { convertToOz } from '@/shared/utils/conversion';
 
 import { Recipe } from '@/features/recipes/types';
 import { Ingredient, Unit } from '@/features/ingredients/types';
@@ -46,12 +47,16 @@ const UNIT_CONVERSIONS: Record<Unit, Partial<Record<Unit, number>>> = {
 
 // Target units for scaling up
 const TARGET_UNITS: { [key in Unit]?: Unit } = {
-  tsp: 'cup',
-  tbsp: 'cup',
-  cup: 'lb',
-  oz: 'lb',
-  g: 'kg',
-  ml: 'l',
+  [Unit.TSP]: Unit.CUP,
+  [Unit.TBSP]: Unit.CUP,
+  [Unit.CUP]: Unit.LB,
+  [Unit.OZ]: Unit.LB,
+  [Unit.G]: Unit.KG,
+  [Unit.ML]: Unit.L,
+  [Unit.KG]: undefined,
+  [Unit.L]: undefined,
+  [Unit.LB]: undefined,
+  [Unit.PIECE]: undefined,
 };
 
 interface Props {
@@ -80,6 +85,7 @@ interface ShoppingListItem {
   name: string;
   amount: number;
   unit: Unit;
+  estimatedCost: number;
 }
 
 const convertUnit = (amount: number, fromUnit: Unit, toUnit: Unit): { amount: number; unit: Unit } => {
@@ -114,6 +120,20 @@ const scaleToLargerUnit = (amount: number, unit: Unit): { amount: number; unit: 
   return { amount, unit };
 };
 
+const calculateIngredientCost = (amount: number, fromUnit: Unit, ingredient: Ingredient): number => {
+  // First convert both amounts to a common unit (oz) for comparison
+  const ingredientAmountInOz = convertToOz(parseFloat(ingredient.amount), ingredient.unit);
+  const requestedAmountInOz = convertToOz(amount, fromUnit);
+  
+  if (ingredientAmountInOz <= 0 || requestedAmountInOz <= 0) return 0;
+  
+  // Calculate the price per oz
+  const pricePerOz = parseFloat(ingredient.price) / ingredientAmountInOz;
+  
+  // Calculate total cost
+  return pricePerOz * requestedAmountInOz;
+};
+
 export const ProductionPlanning: React.FC<Props> = ({
   recipes,
   ingredients,
@@ -124,6 +144,104 @@ export const ProductionPlanning: React.FC<Props> = ({
   const [selectedRecipes, setSelectedRecipes] = useState<SelectedRecipe[]>([]);
   const [prepList, setPrepList] = useState<PrepItem[]>([]);
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  // Validate that all selected recipes and their ingredients still exist
+  const validateData = (): boolean => {
+    let isValid = true;
+    const missingRecipes: string[] = [];
+    const missingIngredients: string[] = [];
+
+    selectedRecipes.forEach(({ recipe }) => {
+      // Check if recipe still exists
+      const currentRecipe = recipes.find(r => r.id === recipe.id);
+      if (!currentRecipe) {
+        missingRecipes.push(recipe.name);
+        isValid = false;
+        return;
+      }
+
+      // Check if all ingredients still exist
+      recipe.ingredients.forEach(ing => {
+        const ingredient = ingredients.find(i => i.name === ing.ingredient);
+        if (!ingredient) {
+          missingIngredients.push(ing.ingredient);
+          isValid = false;
+        }
+      });
+    });
+
+    if (!isValid) {
+      let errorMessage = 'Your production plan needs to be updated:\n\n';
+      
+      if (missingRecipes.length > 0) {
+        errorMessage += 'Missing Recipes:\n';
+        errorMessage += missingRecipes.map(name => `• ${name}`).join('\n');
+        errorMessage += '\n\n';
+      }
+      
+      if (missingIngredients.length > 0) {
+        errorMessage += 'Missing Ingredients:\n';
+        errorMessage += missingIngredients.map(name => `• ${name}`).join('\n');
+        errorMessage += '\n\n';
+      }
+
+      errorMessage += 'Please click "Refresh Data" to update your plan with currently available items.';
+      
+      if (missingRecipes.length > 0 && missingIngredients.length === 0) {
+        errorMessage += '\nYou may need to recreate the missing recipes.';
+      } else if (missingIngredients.length > 0 && missingRecipes.length === 0) {
+        errorMessage += '\nYou may need to add the missing ingredients.';
+      } else {
+        errorMessage += '\nYou may need to add the missing ingredients and recreate the missing recipes.';
+      }
+
+      setError(errorMessage);
+    } else {
+      setError(null);
+    }
+
+    return isValid;
+  };
+
+  // Add refresh function
+  const handleRefresh = () => {
+    // Clear error
+    setError(null);
+    
+    // Filter out any recipes that no longer exist
+    const validRecipes = selectedRecipes.filter(({ recipe }) => {
+      const currentRecipe = recipes.find(r => r.id === recipe.id);
+      if (!currentRecipe) return false;
+      
+      // Check if all ingredients exist
+      return currentRecipe.ingredients.every(ing => 
+        ingredients.some(i => i.name === ing.ingredient)
+      );
+    });
+
+    setSelectedRecipes(validRecipes);
+    
+    // Regenerate lists with valid data
+    if (validRecipes.length > 0) {
+      generatePrepList();
+    } else {
+      setPrepList([]);
+      setShoppingList([]);
+    }
+  };
+
+  // Update useEffect to include validation
+  useEffect(() => {
+    if (selectedRecipes.length > 0) {
+      if (validateData()) {
+        generatePrepList();
+      }
+    } else {
+      setPrepList([]);
+      setShoppingList([]);
+    }
+  }, [selectedRecipes, recipes, ingredients]);
 
   const handleRecipeSelect = (recipeId: string) => {
     const recipe = recipes.find(r => r.id === recipeId);
@@ -133,6 +251,7 @@ export const ProductionPlanning: React.FC<Props> = ({
   };
 
   const handleBatchUpdate = (recipeId: string, batches: number) => {
+    if (batches < 1) return; // Prevent negative or zero batches
     setSelectedRecipes(prev => prev.map(sr => 
       sr.recipe.id === recipeId ? { ...sr, batches } : sr
     ));
@@ -149,7 +268,7 @@ export const ProductionPlanning: React.FC<Props> = ({
         const totalAmount = ing.amount * batches;
         const scaled = scaleToLargerUnit(totalAmount, ing.unit);
         return {
-          name: ing.ingredient,
+          name: ing.ingredient,  // This is the ingredient name from the recipe
           ...scaled
         };
       });
@@ -164,35 +283,64 @@ export const ProductionPlanning: React.FC<Props> = ({
     });
 
     setPrepList(items);
+    calculateShoppingList(items);
   };
 
   // Calculate total ingredients needed for shopping list
-  const calculateShoppingList = () => {
-    const tempList = new Map<string, { amount: number; unit: Unit }>();
+  const calculateShoppingList = (currentPrepList: PrepItem[] = prepList) => {
+    const tempList = new Map<string, { amount: number; unit: Unit; estimatedCost: number }>();
     
-    prepList.forEach(item => {
+    currentPrepList.forEach(item => {
       item.ingredients.forEach(ing => {
+        // Find the base ingredient to get its price
+        const ingredientData = ingredients.find(i => i.name === ing.name);
+        if (!ingredientData) return;
+
+        // Calculate cost based on the ingredient's base price and amount
+        const basePrice = parseFloat(ingredientData.price);
+        const baseAmount = parseFloat(ingredientData.amount);
+        const pricePerUnit = basePrice / baseAmount;
+        const cost = pricePerUnit * ing.amount;
+
         const existing = tempList.get(ing.name);
         if (existing && existing.unit === ing.unit) {
+          // Same unit, just add amounts and costs
           existing.amount += ing.amount;
+          existing.estimatedCost += cost;
         } else if (existing) {
-          // If units don't match, try to convert to the larger unit
+          // Different units, try to convert
           const converted = convertUnit(ing.amount, ing.unit, existing.unit);
           if (converted.unit === existing.unit) {
             existing.amount += converted.amount;
+            existing.estimatedCost += cost;
           } else {
-            tempList.set(ing.name, { amount: ing.amount, unit: ing.unit });
+            // Can't convert, create new entry
+            tempList.set(ing.name, { 
+              amount: ing.amount, 
+              unit: ing.unit,
+              estimatedCost: cost
+            });
           }
         } else {
-          tempList.set(ing.name, { amount: ing.amount, unit: ing.unit });
+          // First time seeing this ingredient
+          tempList.set(ing.name, { 
+            amount: ing.amount, 
+            unit: ing.unit,
+            estimatedCost: cost
+          });
         }
       });
     });
 
-    // Scale up units for the final list
+    // Convert to array and scale units where possible
     const newList = Array.from(tempList.entries()).map(([name, details]) => {
       const { amount, unit } = scaleToLargerUnit(details.amount, details.unit);
-      return { name, amount, unit };
+      return { 
+        name, 
+        amount, 
+        unit,
+        estimatedCost: details.estimatedCost
+      };
     });
 
     setShoppingList(newList);
@@ -200,7 +348,7 @@ export const ProductionPlanning: React.FC<Props> = ({
 
   // Export to Excel
   const exportToExcel = () => {
-    // Create workbook
+    const currentDate = new Date().toISOString().split('T')[0];
     const wb = XLSX.utils.book_new();
 
     // Prep List Sheet
@@ -213,33 +361,55 @@ export const ProductionPlanning: React.FC<Props> = ({
     const wsPrep = XLSX.utils.json_to_sheet(prepListData);
     XLSX.utils.book_append_sheet(wb, wsPrep, 'Prep List');
 
-    // Ingredients Sheet
+    // Recipe Ingredients Sheet
     const ingredientsData = prepList.flatMap(item => 
       item.ingredients.map(ing => ({
         'Recipe': item.recipeName,
         'Ingredient': ing.name,
-        'Amount': ing.amount,
+        'Amount': ing.amount.toFixed(2),
         'Unit': ing.unit,
       }))
     );
     const wsIngredients = XLSX.utils.json_to_sheet(ingredientsData);
-    XLSX.utils.book_append_sheet(wb, wsIngredients, 'Ingredients');
+    XLSX.utils.book_append_sheet(wb, wsIngredients, 'Recipe Ingredients');
 
     // Shopping List Sheet
-    const shoppingListData = shoppingList.map((item, index) => ({
+    const shoppingListData = shoppingList.map((item) => ({
       'Ingredient': item.name,
-      'Amount': item.amount,
+      'Total Amount': item.amount.toFixed(2),
       'Unit': item.unit,
+      'Estimated Cost': `$${item.estimatedCost.toFixed(2)}`,
     }));
-    const wsShopping = XLSX.utils.json_to_sheet(shoppingListData);
+
+    // Add total row
+    const totalCost = shoppingList.reduce((sum, item) => sum + item.estimatedCost, 0);
+    const totalRow = {
+      'Ingredient': 'TOTAL',
+      'Total Amount': '',
+      'Estimated Cost': `$${totalCost.toFixed(2)}`,
+    };
+
+    const wsShopping = XLSX.utils.json_to_sheet([...shoppingListData, totalRow]);
     XLSX.utils.book_append_sheet(wb, wsShopping, 'Shopping List');
 
-    // Save the file
-    XLSX.writeFile(wb, `Production_Plan_${selectedDate}.xlsx`);
+    XLSX.writeFile(wb, `production_plan_${currentDate}.xlsx`);
   };
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-destructive/15 text-destructive p-4 rounded-md space-y-2">
+          <p className="whitespace-pre-line">{error}</p>
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh}
+            className="mt-2"
+          >
+            Refresh Data
+          </Button>
+        </div>
+      )}
+      
       <div className="flex items-end gap-4">
         <div>
           <Label htmlFor="production-date">Production Date</Label>
@@ -265,6 +435,13 @@ export const ProductionPlanning: React.FC<Props> = ({
             ))}
           </select>
         </div>
+        <Button
+          variant="outline"
+          onClick={handleRefresh}
+          className="mb-[2px]"
+        >
+          Refresh Data
+        </Button>
       </div>
 
       {/* Selected Recipes */}
@@ -302,52 +479,36 @@ export const ProductionPlanning: React.FC<Props> = ({
       </Card>
 
       {selectedRecipes.length > 0 && (
-        <div className="flex gap-4">
-          <Button onClick={generatePrepList}>Generate Plan</Button>
-          {prepList.length > 0 && (
-            <Button onClick={exportToExcel}>Export to Excel</Button>
-          )}
-        </div>
-      )}
-
-      {prepList.length > 0 && (
-        <Tabs defaultValue="prep-list">
+        <Tabs defaultValue="prep">
           <TabsList>
-            <TabsTrigger value="prep-list">Prep List</TabsTrigger>
-            <TabsTrigger value="schedule">Production Schedule</TabsTrigger>
+            <TabsTrigger value="prep">Prep List</TabsTrigger>
+            <TabsTrigger value="schedule">Schedule</TabsTrigger>
             <TabsTrigger value="shopping">Shopping List</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="prep-list">
+          <TabsContent value="prep">
             <Card>
               <CardHeader>
-                <CardTitle>Daily Prep List</CardTitle>
+                <CardTitle>Prep List</CardTitle>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-4">
                     {prepList.map((item, index) => (
                       <div key={index} className="border rounded-md p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <h4 className="font-medium">{item.recipeName}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              Quantity: {item.quantity} batches
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm">Prep Time: {item.prepTime} mins</p>
-                            <p className="text-sm text-muted-foreground">
-                              Shelf Life: {item.shelfLife} days
-                            </p>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          {item.ingredients.map((ing, i) => (
-                            <p key={i} className="text-sm">
-                              {ing.amount.toFixed(2)} {ing.unit} {ing.name}
-                            </p>
-                          ))}
+                        <h4 className="font-medium">{item.recipeName}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {item.quantity} batches
+                        </p>
+                        <div className="mt-2">
+                          <p className="text-sm font-medium">Ingredients:</p>
+                          <ul className="text-sm text-muted-foreground">
+                            {item.ingredients.map((ing, i) => (
+                              <li key={i}>
+                                {ing.name}: {ing.amount.toFixed(2)} {ing.unit}
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       </div>
                     ))}
@@ -400,11 +561,26 @@ export const ProductionPlanning: React.FC<Props> = ({
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-4">
                     {shoppingList.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <span>{item.name}</span>
-                        <span>{item.amount.toFixed(2)} {item.unit}</span>
+                      <div key={index} className="flex items-center justify-between border-b pb-2">
+                        <span className="font-medium">{item.name}</span>
+                        <div className="text-right">
+                          <div>{item.amount.toFixed(2)} {item.unit}</div>
+                          <div className="text-sm text-muted-foreground">
+                            Est. Cost: ${item.estimatedCost.toFixed(2)}
+                          </div>
+                        </div>
                       </div>
                     ))}
+                    {shoppingList.length > 0 && (
+                      <div className="flex justify-end pt-4 border-t">
+                        <div className="text-right">
+                          <div className="font-medium">Total Estimated Cost</div>
+                          <div className="text-lg">
+                            ${shoppingList.reduce((total, item) => total + item.estimatedCost, 0).toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </ScrollArea>
                 <Button 

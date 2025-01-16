@@ -1,4 +1,15 @@
-export type Unit = 'lb' | 'oz' | 'g' | 'kg' | 'cup' | 'tbsp' | 'tsp' | 'ml' | 'l' | 'piece';
+export enum Unit {
+  LB = 'lb',
+  OZ = 'oz',
+  G = 'g',
+  KG = 'kg',
+  CUP = 'cup',
+  TBSP = 'tbsp',
+  TSP = 'tsp',
+  ML = 'ml',
+  L = 'l',
+  PIECE = 'piece'
+}
 
 export type Category = 'Produce' | 'Meat' | 'Dairy' | 'Dry Goods' | 'Spices' | 'Other';
 

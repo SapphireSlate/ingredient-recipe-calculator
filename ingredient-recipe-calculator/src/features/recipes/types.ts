@@ -20,6 +20,7 @@ export interface Recipe {
   monthlySales: number;
   prepTime: number;
   shelfLife: number;
+  sales: number;
 }
 
 export interface NewRecipe {

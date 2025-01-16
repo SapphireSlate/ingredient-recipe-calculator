@@ -20,12 +20,24 @@ module.exports = {
           loader: 'ts-loader',
           options: {
             transpileOnly: true,
+            compilerOptions: {
+              jsx: 'react-jsx'
+            }
           },
         },
       },
       {
         test: /\.css$/,
-        use: [MiniCssExtractPlugin.loader, 'css-loader', 'postcss-loader'],
+        use: [
+          MiniCssExtractPlugin.loader,
+          {
+            loader: 'css-loader',
+            options: {
+              importLoaders: 1,
+            },
+          },
+          'postcss-loader',
+        ],
       },
     ],
   },
@@ -60,32 +72,9 @@ module.exports = {
         errors: true,
         warnings: false,
       },
-      webSocketURL: 'auto://0.0.0.0:0/ws',
     },
     static: {
       directory: path.join(__dirname, 'public'),
-    },
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-      "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization",
-      "Access-Control-Allow-Credentials": "true",
-      "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' http://localhost:* https://localhost:*;"
-    },
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        pathRewrite: { '^/api': '' },
-        changeOrigin: true,
-        secure: false,
-        ws: true,
-      },
-      '/dlnk': {
-        target: 'https://dlnk.one',
-        pathRewrite: { '^/dlnk': '' },
-        changeOrigin: true,
-        secure: true,
-      }
     },
   },
   devtool: 'source-map',

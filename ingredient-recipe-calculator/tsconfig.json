@@ -4,27 +4,24 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
     "jsx": "react-jsx",
-    "baseUrl": "src",
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["*"],
-      "@components/*": ["components/*"],
-      "@features/*": ["features/*"],
-      "@shared/*": ["shared/*"],
-      "@utils/*": ["shared/utils/*"],
-      "@types/*": ["shared/types/*"]
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@features/*": ["src/features/*"],
+      "@shared/*": ["src/shared/*"],
+      "@utils/*": ["src/shared/utils/*"],
+      "@types/*": ["src/shared/types/*"]
     }
   },
-  "include": ["src"],
+  "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]
 }
