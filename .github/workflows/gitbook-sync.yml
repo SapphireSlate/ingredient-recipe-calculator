@@ -1,0 +1,43 @@
+name: GitBook Sync
+
+on:
+  push:
+    branches:
+      - main
+      - feature/typescript-migration
+    paths:
+      - 'GITBOOK.md'
+      - 'docs/**'
+
+jobs:
+  sync-gitbook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install GitBook CLI
+        run: npm install -g gitbook-cli
+
+      - name: Create docs directory if not exists
+        run: |
+          mkdir -p docs
+          cp GITBOOK.md docs/README.md
+
+      - name: Setup GitBook
+        run: |
+          cd docs
+          gitbook init
+          gitbook build
+
+      - name: Deploy to GitBook
+        env:
+          GITBOOK_TOKEN: ${{ secrets.GITBOOK_TOKEN }}
+        run: |
+          # Add GitBook deployment commands here
+          # This will vary based on your GitBook setup and API integration 
