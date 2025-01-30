@@ -14,26 +14,21 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Main Branch
         uses: actions/checkout@v4
+        with:
+          path: main-version
+
+      - name: Checkout TypeScript Branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages-typescript
+          path: typescript-version
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install Root Dependencies
-        run: |
-          cd ingredient-recipe-calculator
-          npm install
-          npm install --save-dev @babel/plugin-proposal-private-property-in-object
-
-      - name: Setup Directory Structure
-        run: |
-          mkdir -p main-version/ingredient-recipe-calculator
-          mkdir -p typescript-version/ingredient-recipe-calculator
-          cp -r ingredient-recipe-calculator/* main-version/ingredient-recipe-calculator/
-          cp -r ingredient-recipe-calculator/* typescript-version/ingredient-recipe-calculator/
 
       - name: Install Main Version Dependencies
         run: |
