@@ -1,20 +1,20 @@
-# Ingredient Recipe Calculator
+# Recipe Calculator
 
-A modern web application for calculating recipe costs and managing ingredients efficiently. Built with React and styled with Tailwind CSS.
+A web application for calculating recipe ingredient quantities based on serving size adjustments. Available in both JavaScript and TypeScript versions.
 
-## 🌟 Features
+## Live Demo
+Visit the application at: https://sapphireslate.github.io/ingredient-recipe-calculator/
 
-- Calculate recipe costs based on ingredient prices
-- Manage ingredient inventory and costs
-- User-friendly interface with modern design
-- Responsive layout for all devices
-- Real-time cost calculations
+Choose between:
+- [JavaScript Version](https://sapphireslate.github.io/ingredient-recipe-calculator/javascript/)
+- [TypeScript Version](https://sapphireslate.github.io/ingredient-recipe-calculator/typescript/)
 
-## 🚀 Live Demo
+## Project Structure
+The project maintains two versions:
+- Main branch (JavaScript): Traditional React implementation
+- gh-pages-typescript branch: TypeScript implementation with enhanced type safety
 
-Visit the live application at: [https://SapphireSlate.github.io/ingredient-recipe-calculator](https://SapphireSlate.github.io/ingredient-recipe-calculator)
-
-## 🛠️ Installation
+## Development Setup
 
 1. Clone the repository:
 ```bash
@@ -27,38 +27,81 @@ cd ingredient-recipe-calculator
 npm install
 ```
 
-3. Create a `.env` file in the root directory and add your environment variables:
-```env
-REACT_APP_API_URL=<your_api_url>
-```
-
-4. Start the development server:
+3. Start the development server:
 ```bash
 npm start
 ```
 
-The application will open in your default browser at [http://localhost:3000](http://localhost:3000).
+## Building and Deployment
 
-## 📦 Build for Production
-
-To create a production build:
-
+### Local Build
 ```bash
+# For JavaScript version
 npm run build
+
+# For TypeScript version (on gh-pages-typescript branch)
+PUBLIC_URL=/ingredient-recipe-calculator/typescript npm run build
 ```
 
-To deploy to GitHub Pages:
+### GitHub Pages Deployment
+The project uses GitHub Actions for automated deployment to GitHub Pages. The workflow:
+1. Builds both JavaScript and TypeScript versions
+2. Creates a version selector landing page
+3. Deploys everything to the gh-pages branch
 
-```bash
-npm run deploy
-```
+#### Troubleshooting Deployment Issues
 
-## 🔧 Technologies Used
+1. **Public Path Configuration**
+   - JavaScript build requires: `PUBLIC_URL=/ingredient-recipe-calculator/javascript`
+   - TypeScript build requires: `PUBLIC_URL=/ingredient-recipe-calculator/typescript`
+   - Webpack config must use the environment variable for publicPath
 
-- React 18
-- Tailwind CSS
-- Radix UI Components
-- GitHub Pages
+2. **Git Repository Structure**
+   - The deployment workflow creates a new git repository in the `dist` directory
+   - Both versions are copied to their respective subdirectories
+   - Git user configuration is required for deployment actions
+
+3. **Common Issues**
+   - "fatal: not in a git directory": Ensure git is initialized in the deployment directory
+   - Incorrect routing: Check public path configuration in both builds
+   - Build output location: Verify correct paths in workflow copy commands
+
+## Implementation Notes
+
+### JavaScript Version
+- Uses Create React App
+- Implements core recipe calculation functionality
+- Maintains simple state management
+
+### TypeScript Version
+- Enhanced with type safety
+- Uses webpack for building
+- Requires proper public path configuration for deployment
+
+## Future Updates
+When implementing updates:
+1. Make changes in both JavaScript and TypeScript versions
+2. Test builds locally with correct public paths
+3. Verify changes in both versions before deployment
+4. Update workflow if build configuration changes
+
+## Contributing
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🌟 Features
+
+- Calculate recipe costs based on ingredient prices
+- Manage ingredient inventory and costs
+- User-friendly interface with modern design
+- Responsive layout for all devices
+- Real-time cost calculations
 
 ## 🤝 Contributing
 
