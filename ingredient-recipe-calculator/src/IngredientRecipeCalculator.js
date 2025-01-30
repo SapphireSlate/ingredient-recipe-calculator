@@ -65,7 +65,7 @@ const IngredientRecipeCalculator = () => {
       const userData = getUserData(loggedInUser);
       setIngredients(prevIngredients => userData.ingredients || prevIngredients);
       setRecipes(userData.recipes || []);
-      setOverheadData(userData.overheadData || overheadData);
+      setOverheadData(prevData => userData.overheadData || prevData);
     }
   }, []);
 
@@ -358,7 +358,7 @@ return (
           <ScrollArea className="h-[300px] pr-4 mb-6">
             {recipes.map((recipe, recipeIndex) => (
               <div key={recipeIndex} className="mb-4">
-                <h4 className="font-semibold">{recipe.name}</h4>
+                <h4 className="font-semibold mb-2">{recipe.name || 'Untitled Recipe'}</h4>
                 <p>Cost: ${recipe.cost.toFixed(2)}</p>
                 <p>Yield: {recipe.yield} servings</p>
                 <p>Monthly Sales: {recipe.monthlySales} units</p>
@@ -430,7 +430,7 @@ return (
             )}
             {newRecipe.ingredients.length > 0 && (
               <div className="mt-4">
-                <h4 className="font-semibold">Current Recipe: {newRecipe.name}</h4>
+                <h4 className="font-semibold mb-2">{newRecipe.name || 'New Recipe'}</h4>
                 <p>Estimated Cost: ${calculateRecipeCost(newRecipe).toFixed(2)}</p>
                 <ul>
                   {newRecipe.ingredients.map((ingredient, idx) => (

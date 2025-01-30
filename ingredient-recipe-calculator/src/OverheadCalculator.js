@@ -8,7 +8,10 @@ const OverheadCalculator = ({ recipes, updateRecipe, overheadData, setOverheadDa
   const { rent, utilities, payroll, otherExpenses, profitPercentage } = overheadData;
 
   const updateOverheadData = (field, value) => {
-    setOverheadData(prev => ({ ...prev, [field]: parseFloat(value) || 0 }));
+    setOverheadData(prevData => ({
+      ...prevData,
+      [field]: parseFloat(value) || 0
+    }));
   };
 
   const calculateTotalOverhead = () => {
@@ -84,7 +87,7 @@ const OverheadCalculator = ({ recipes, updateRecipe, overheadData, setOverheadDa
         </div>
         
         <div className="mt-4">
-          <h3 className="font-semibold">Suggested Retail Prices:</h3>
+          <h3 className="font-semibold mb-2">Recipe Retail Prices</h3>
           <ul>
             {recipes.map((recipe, index) => (
               <li key={index} className="flex items-center justify-between my-2">
