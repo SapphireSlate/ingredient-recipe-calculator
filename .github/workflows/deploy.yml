@@ -65,8 +65,8 @@ jobs:
           # Copy main version to javascript directory
           cp -r main-version/ingredient-recipe-calculator/build/* dist/javascript/
           
-          # Copy typescript version from webpack output
-          cp -r typescript-version/ingredient-recipe-calculator/dist/* dist/typescript/
+          # Copy typescript version from webpack build output
+          cp -r typescript-version/ingredient-recipe-calculator/build/* dist/typescript/
           
           # Create version selector page
           cat > dist/index.html << 'EOL'
