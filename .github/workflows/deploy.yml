@@ -19,6 +19,10 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # Checkout for deployment
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
       - name: Checkout Main Branch
         uses: actions/checkout@v4
         with:
@@ -58,6 +62,7 @@ jobs:
 
       - name: Prepare deployment
         run: |
+          # Create dist directory in the root checkout
           rm -rf dist
           mkdir -p dist/javascript
           mkdir -p dist/typescript
