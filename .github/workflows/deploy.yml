@@ -62,8 +62,12 @@ jobs:
 
       - name: Prepare deployment
         run: |
-          # Create dist directory in the root checkout
-          rm -rf dist
+          # Initialize git in dist directory
+          git init dist
+          git -C dist config user.name "GitHub Actions"
+          git -C dist config user.email "actions@github.com"
+          
+          # Create dist directory structure
           mkdir -p dist/javascript
           mkdir -p dist/typescript
           
