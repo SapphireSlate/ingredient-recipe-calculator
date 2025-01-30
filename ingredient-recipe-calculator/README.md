@@ -6,13 +6,13 @@ A professional recipe cost calculator application built with React. This applica
 
 ### Stable Version (Main Branch)
 - Built with React and JavaScript
-- Access it at: [Stable Version](https://yourusername.github.io/ingredient-recipe-calculator/)
+- Access it at: [Stable Version](https://sapphireslate.github.io/ingredient-recipe-calculator/)
 
-### TypeScript Version (TypeScript Branch)
+### TypeScript Version (gh-pages-typescript Branch)
 - Enhanced version with TypeScript support
 - Modern UI components with Shadcn/UI
 - Improved type safety and developer experience
-- Access it at: [TypeScript Version](https://yourusername.github.io/ingredient-recipe-calculator/typescript/)
+- Access it at: [TypeScript Version](https://sapphireslate.github.io/ingredient-recipe-calculator/typescript/)
 
 ## Features
 
