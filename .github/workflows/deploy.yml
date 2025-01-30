@@ -6,8 +6,16 @@ on:
       - gh-pages
       - gh-pages-typescript
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Stable Branch
@@ -27,6 +35,9 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
       # Copy Stable Version (already built)
       - name: Copy Stable Version
         run: |
@@ -37,7 +48,7 @@ jobs:
       - name: Build TypeScript Version
         working-directory: ts-version
         run: |
-          npm install
+          npm ci
           npm run build
           mkdir -p ../dist/typescript
           cp -r build/* ../dist/typescript/
@@ -68,10 +79,11 @@ jobs:
             </body>
           </html>' > dist/index.html
 
-      # Deploy to GitHub Pages
-      - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
         with:
-          branch: gh-pages
-          folder: dist
-          clean: true # Now safe to clean since we're managing all content 
+          path: './dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2 
