@@ -32,10 +32,19 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: typescript-version/ingredient-recipe-calculator/package-lock.json
 
-      - name: Install TypeScript dependencies
+      - name: Install Main Version Dependencies
+        working-directory: main-version/ingredient-recipe-calculator
+        run: npm ci
+
+      - name: Build Main Version
+        working-directory: main-version/ingredient-recipe-calculator
+        env:
+          NODE_ENV: production
+          PUBLIC_URL: /ingredient-recipe-calculator
+        run: npm run build
+
+      - name: Install TypeScript Dependencies
         working-directory: typescript-version/ingredient-recipe-calculator
         run: npm ci
 
@@ -43,6 +52,7 @@ jobs:
         working-directory: typescript-version/ingredient-recipe-calculator
         env:
           NODE_ENV: production
+          PUBLIC_URL: /ingredient-recipe-calculator/typescript
         run: npm run build
 
       - name: Configure Pages
@@ -53,7 +63,7 @@ jobs:
           mkdir -p dist
           mkdir -p dist/typescript
           cp -r typescript-version/ingredient-recipe-calculator/build/* dist/typescript/
-          cp -r main-version/* dist/
+          cp -r main-version/ingredient-recipe-calculator/build/* dist/
           echo '<!DOCTYPE html>
           <html>
             <head>
@@ -113,11 +123,13 @@ jobs:
                 <h1>Ingredient Recipe Calculator</h1>
                 <p>Please select your preferred version of the application:</p>
                 <div class="button-container">
+                  <a href="./index.html" class="button">JavaScript Version</a>
                   <a href="./typescript/index.html" class="button">TypeScript Version</a>
                 </div>
               </div>
             </body>
-          </html>' > dist/index.html
+          </html>' > dist/version-select.html
+          mv dist/version-select.html dist/index.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
