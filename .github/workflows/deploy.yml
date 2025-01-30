@@ -3,7 +3,6 @@ name: Deploy Multiple Versions
 on:
   push:
     branches:
-      - gh-pages
       - gh-pages-typescript
 
 permissions:
@@ -18,17 +17,19 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Stable Branch
-        uses: actions/checkout@v3
-        with:
-          ref: gh-pages
-          path: stable-version
-
       - name: Checkout TypeScript Branch
         uses: actions/checkout@v3
         with:
           ref: gh-pages-typescript
           path: ts-version
+
+      - name: Checkout Stable Branch
+        uses: actions/checkout@v3
+        with:
+          ref: gh-pages
+          path: stable-version
+          repository: ${{ github.repository }}
+          token: ${{ github.token }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
