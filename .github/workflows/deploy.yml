@@ -54,26 +54,18 @@ jobs:
 
       - name: Prepare deployment
         run: |
-          # Initialize a new git repo in the dist directory
           rm -rf dist
-          mkdir -p dist
-          cd dist
-          git init
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
-          # Create directories and copy files
-          mkdir -p javascript
-          mkdir -p typescript
+          mkdir -p dist/javascript
+          mkdir -p dist/typescript
           
           # Copy main version to javascript directory
-          cp -r ../main-version/ingredient-recipe-calculator/build/* javascript/
+          cp -r main-version/ingredient-recipe-calculator/build/* dist/javascript/
           
           # Copy typescript version
-          cp -r ../typescript-version/ingredient-recipe-calculator/build/* typescript/
+          cp -r typescript-version/ingredient-recipe-calculator/build/* dist/typescript/
           
           # Create version selector page
-          cat > index.html << 'EOL'
+          cat > dist/index.html << 'EOL'
           <!DOCTYPE html>
           <html>
           <head>
@@ -99,6 +91,5 @@ jobs:
         with:
           folder: dist
           branch: gh-pages
-          git-config-name: github-actions[bot]
-          git-config-email: github-actions[bot]@users.noreply.github.com
-          clean: true 
+          clean: true
+          single-commit: true 
