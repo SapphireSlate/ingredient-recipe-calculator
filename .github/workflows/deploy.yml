@@ -31,40 +31,79 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-
       - name: Install dependencies
-        working-directory: typescript-version
+        working-directory: typescript-version/ingredient-recipe-calculator
         run: npm ci
 
       - name: Build TypeScript Version
-        working-directory: typescript-version
+        working-directory: typescript-version/ingredient-recipe-calculator
         run: npm run build
 
       - name: Prepare deployment
         run: |
           mkdir -p dist
-          cp -r ./* dist/stable/
-          cp -r typescript-version/build/* dist/typescript/
+          mkdir -p dist/typescript
+          cp -r typescript-version/ingredient-recipe-calculator/build/* dist/typescript/
           echo '<!DOCTYPE html>
           <html>
             <head>
               <meta charset="utf-8">
               <title>Ingredient Recipe Calculator - Version Select</title>
               <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-                .container { max-width: 600px; margin: 50px auto; text-align: center; }
-                .button { display: inline-block; padding: 10px 20px; margin: 10px; text-decoration: none; 
-                         color: white; background: #0366d6; border-radius: 5px; }
+                body { 
+                  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                  margin: 0;
+                  padding: 20px;
+                  background: #f5f5f5;
+                }
+                .container { 
+                  max-width: 800px; 
+                  margin: 50px auto; 
+                  text-align: center;
+                  background: white;
+                  padding: 40px;
+                  border-radius: 12px;
+                  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                .button-container {
+                  display: flex;
+                  gap: 20px;
+                  justify-content: center;
+                  margin-top: 30px;
+                }
+                .button { 
+                  display: inline-block; 
+                  padding: 15px 30px; 
+                  text-decoration: none; 
+                  color: #0366d6; 
+                  background: white;
+                  border: 2px solid #0366d6;
+                  border-radius: 8px;
+                  font-weight: 500;
+                  transition: all 0.2s ease;
+                }
+                .button:hover {
+                  background: #0366d6;
+                  color: white;
+                }
+                h1 {
+                  color: #1a1a1a;
+                  margin-bottom: 10px;
+                }
+                p {
+                  color: #666;
+                  font-size: 1.1em;
+                  margin-bottom: 30px;
+                }
               </style>
             </head>
             <body>
               <div class="container">
                 <h1>Ingredient Recipe Calculator</h1>
-                <p>Please select a version:</p>
-                <a href="stable/" class="button">Stable Version</a>
-                <a href="typescript/" class="button">TypeScript Version</a>
+                <p>Please select your preferred version of the application:</p>
+                <div class="button-container">
+                  <a href="./typescript/" class="button">TypeScript Version</a>
+                </div>
               </div>
             </body>
           </html>' > dist/index.html
