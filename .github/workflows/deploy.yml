@@ -22,6 +22,11 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install Root Dependencies
+        run: |
+          cd ingredient-recipe-calculator
+          npm install
+
       - name: Setup Directory Structure
         run: |
           mkdir -p main-version/ingredient-recipe-calculator
