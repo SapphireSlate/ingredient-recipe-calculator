@@ -4,7 +4,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 const isProduction = process.env.NODE_ENV === 'production';
-const baseUrl = isProduction ? '/ingredient-recipe-calculator' : '/';
+const baseUrl = isProduction ? '/ingredient-recipe-calculator/typescript' : '/';
 
 module.exports = {
   entry: './src/index.tsx',
