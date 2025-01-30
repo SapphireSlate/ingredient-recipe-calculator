@@ -44,7 +44,7 @@ jobs:
       - name: Build Main Version
         run: |
           cd main-version/ingredient-recipe-calculator
-          CI=false PUBLIC_URL=/ingredient-recipe-calculator NODE_ENV=production npm run build
+          CI=false PUBLIC_URL=/ingredient-recipe-calculator/javascript NODE_ENV=production npm run build
 
       - name: Install TypeScript Version Dependencies
         run: |
@@ -61,11 +61,11 @@ jobs:
         run: |
           rm -rf dist
           mkdir -p dist
+          mkdir -p dist/javascript
           mkdir -p dist/typescript
           
-          # Copy main version
-          cp -r main-version/ingredient-recipe-calculator/build/* dist/
-          mv dist/index.html dist/main.html
+          # Copy main version to javascript directory
+          cp -r main-version/ingredient-recipe-calculator/build/* dist/javascript/
           
           # Copy typescript version
           cp -r typescript-version/ingredient-recipe-calculator/build/* dist/typescript/
@@ -86,7 +86,7 @@ jobs:
           </head>
           <body>
               <h1>Recipe Calculator - Choose Version</h1>
-              <a href="./index.html" class="version-link">JavaScript Version</a>
+              <a href="./javascript/index.html" class="version-link">JavaScript Version</a>
               <a href="./typescript/index.html" class="version-link">TypeScript Version</a>
           </body>
           </html>
