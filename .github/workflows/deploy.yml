@@ -62,7 +62,12 @@ jobs:
           rm -rf dist
           mkdir -p dist
           mkdir -p dist/typescript
+          
+          # Copy main version
           cp -r main-version/ingredient-recipe-calculator/build/* dist/
+          mv dist/index.html dist/main.html
+          
+          # Copy typescript version
           cp -r typescript-version/ingredient-recipe-calculator/build/* dist/typescript/
           
           # Create version selector page
@@ -81,7 +86,7 @@ jobs:
           </head>
           <body>
               <h1>Recipe Calculator - Choose Version</h1>
-              <a href="./main.html" class="version-link">JavaScript Version</a>
+              <a href="./index.html" class="version-link">JavaScript Version</a>
               <a href="./typescript/index.html" class="version-link">TypeScript Version</a>
           </body>
           </html>
