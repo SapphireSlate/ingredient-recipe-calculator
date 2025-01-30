@@ -3,7 +3,7 @@ name: Deploy Multiple Versions
 on:
   push:
     branches:
-      - pages
+      - gh-pages
       - gh-pages-typescript
 
 jobs:
@@ -13,7 +13,7 @@ jobs:
       - name: Checkout Stable Branch
         uses: actions/checkout@v3
         with:
-          ref: pages
+          ref: gh-pages
           path: stable-version
 
       - name: Checkout TypeScript Branch
