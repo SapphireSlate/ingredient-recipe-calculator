@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - gh-pages-typescript
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,21 +18,18 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout TypeScript Branch
+      - name: Checkout TypeScript Version
         uses: actions/checkout@v3
         with:
-          ref: gh-pages-typescript
-          path: ts-version
+          path: typescript-version
 
-      - name: Checkout Stable Branch
+      - name: Checkout Stable Version
         uses: actions/checkout@v3
         with:
           ref: gh-pages
           path: stable-version
-          repository: ${{ github.repository }}
-          token: ${{ github.token }}
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: '18'
@@ -39,30 +37,24 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v3
 
-      # Copy Stable Version (already built)
-      - name: Copy Stable Version
-        run: |
-          mkdir -p dist/stable
-          cp -r stable-version/* dist/stable/
+      - name: Install dependencies
+        working-directory: typescript-version
+        run: npm ci
 
-      # Build TypeScript Version
       - name: Build TypeScript Version
-        working-directory: ts-version
-        run: |
-          npm ci
-          npm run build
-          mkdir -p ../dist/typescript
-          cp -r build/* ../dist/typescript/
+        working-directory: typescript-version
+        run: npm run build
 
-      # Update index.html to redirect to versions
-      - name: Create Version Index
+      - name: Prepare deployment
         run: |
+          mkdir -p dist
+          cp -r stable-version/* dist/stable/
+          cp -r typescript-version/build/* dist/typescript/
           echo '<!DOCTYPE html>
           <html>
             <head>
               <meta charset="utf-8">
               <title>Ingredient Recipe Calculator - Version Select</title>
-              <meta http-equiv="refresh" content="0; url=stable/">
               <style>
                 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
                 .container { max-width: 600px; margin: 50px auto; text-align: center; }
