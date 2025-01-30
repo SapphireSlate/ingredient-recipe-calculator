@@ -50,12 +50,11 @@ jobs:
         run: |
           cd typescript-version/ingredient-recipe-calculator
           npm install
-          npm install --save-dev @babel/plugin-proposal-private-property-in-object
 
       - name: Build TypeScript Version
         run: |
           cd typescript-version/ingredient-recipe-calculator
-          CI=false PUBLIC_URL=/ingredient-recipe-calculator/typescript NODE_ENV=production npm run build:typescript || npm run build
+          PUBLIC_URL=/ingredient-recipe-calculator/typescript NODE_ENV=production npm run build
 
       - name: Prepare deployment
         run: |
@@ -66,12 +65,8 @@ jobs:
           # Copy main version to javascript directory
           cp -r main-version/ingredient-recipe-calculator/build/* dist/javascript/
           
-          # Copy typescript version - handle both webpack and CRA output
-          if [ -d "typescript-version/ingredient-recipe-calculator/dist" ]; then
-            cp -r typescript-version/ingredient-recipe-calculator/dist/* dist/typescript/
-          else
-            cp -r typescript-version/ingredient-recipe-calculator/build/* dist/typescript/
-          fi
+          # Copy typescript version from webpack output
+          cp -r typescript-version/ingredient-recipe-calculator/dist/* dist/typescript/
           
           # Create version selector page
           cat > dist/index.html << 'EOL'
