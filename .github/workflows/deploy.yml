@@ -26,6 +26,7 @@ jobs:
         run: |
           cd ingredient-recipe-calculator
           npm install
+          npm install --save-dev @babel/plugin-proposal-private-property-in-object
 
       - name: Setup Directory Structure
         run: |
@@ -38,21 +39,23 @@ jobs:
         run: |
           cd main-version/ingredient-recipe-calculator
           npm install
+          npm install --save-dev @babel/plugin-proposal-private-property-in-object
 
       - name: Build Main Version
         run: |
           cd main-version/ingredient-recipe-calculator
-          PUBLIC_URL=/ingredient-recipe-calculator NODE_ENV=production npm run build
+          CI=false PUBLIC_URL=/ingredient-recipe-calculator NODE_ENV=production npm run build
 
       - name: Install TypeScript Version Dependencies
         run: |
           cd typescript-version/ingredient-recipe-calculator
           npm install
+          npm install --save-dev @babel/plugin-proposal-private-property-in-object
 
       - name: Build TypeScript Version
         run: |
           cd typescript-version/ingredient-recipe-calculator
-          PUBLIC_URL=/ingredient-recipe-calculator/typescript NODE_ENV=production npm run build
+          CI=false PUBLIC_URL=/ingredient-recipe-calculator/typescript NODE_ENV=production npm run build
 
       - name: Prepare deployment
         run: |
