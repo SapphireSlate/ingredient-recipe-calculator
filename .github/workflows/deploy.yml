@@ -1,10 +1,9 @@
 name: Deploy Multiple Versions
 
 on:
-  push:
-    branches:
-      - gh-pages-typescript
   workflow_dispatch:
+  repository_dispatch:
+    types: [typescript_update]
 
 permissions:
   contents: write
@@ -18,16 +17,14 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Current Branch
+        uses: actions/checkout@v3
+
       - name: Checkout TypeScript Version
         uses: actions/checkout@v3
         with:
+          ref: gh-pages-typescript
           path: typescript-version
-
-      - name: Checkout Stable Version
-        uses: actions/checkout@v3
-        with:
-          ref: gh-pages
-          path: stable-version
 
       - name: Setup Node
         uses: actions/setup-node@v3
@@ -48,7 +45,7 @@ jobs:
       - name: Prepare deployment
         run: |
           mkdir -p dist
-          cp -r stable-version/* dist/stable/
+          cp -r ./* dist/stable/
           cp -r typescript-version/build/* dist/typescript/
           echo '<!DOCTYPE html>
           <html>
@@ -72,12 +69,11 @@ jobs:
             </body>
           </html>' > dist/index.html
 
-      - name: Commit to gh-pages
-        run: |
-          cd dist
-          git init
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add .
-          git commit -m "Deploy Multiple Versions"
-          git push --force "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" HEAD:gh-pages 
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: './dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2 
