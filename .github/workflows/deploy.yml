@@ -27,14 +27,11 @@ jobs:
         with:
           node-version: '18'
 
-      # Build Stable Version
-      - name: Build Stable Version
-        working-directory: stable-version
+      # Copy Stable Version (already built)
+      - name: Copy Stable Version
         run: |
-          npm install
-          npm run build
-          mkdir -p ../dist/stable
-          cp -r build/* ../dist/stable/
+          mkdir -p dist/stable
+          cp -r stable-version/* dist/stable/
 
       # Build TypeScript Version
       - name: Build TypeScript Version
