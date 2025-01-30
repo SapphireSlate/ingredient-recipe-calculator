@@ -1,0 +1,79 @@
+name: Deploy Multiple Versions
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Main Version Dependencies
+        run: |
+          cd main-version/ingredient-recipe-calculator
+          npm install
+
+      - name: Build Main Version
+        run: |
+          cd main-version/ingredient-recipe-calculator
+          PUBLIC_URL=/ingredient-recipe-calculator NODE_ENV=production npm run build
+
+      - name: Install TypeScript Version Dependencies
+        run: |
+          cd typescript-version/ingredient-recipe-calculator
+          npm install
+
+      - name: Build TypeScript Version
+        run: |
+          cd typescript-version/ingredient-recipe-calculator
+          PUBLIC_URL=/ingredient-recipe-calculator/typescript NODE_ENV=production npm run build
+
+      - name: Prepare deployment
+        run: |
+          rm -rf dist
+          mkdir -p dist
+          mkdir -p dist/typescript
+          cp -r main-version/ingredient-recipe-calculator/build/* dist/
+          cp -r typescript-version/ingredient-recipe-calculator/build/* dist/typescript/
+          
+          # Create version selector page
+          cat > dist/index.html << 'EOL'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Recipe Calculator - Version Select</title>
+              <style>
+                  body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+                  h1 { color: #333; }
+                  .version-link { display: block; margin: 20px 0; padding: 15px; background: #f5f5f5; 
+                                 border-radius: 5px; text-decoration: none; color: #333; }
+                  .version-link:hover { background: #e5e5e5; }
+              </style>
+          </head>
+          <body>
+              <h1>Recipe Calculator - Choose Version</h1>
+              <a href="./main.html" class="version-link">JavaScript Version</a>
+              <a href="./typescript/index.html" class="version-link">TypeScript Version</a>
+          </body>
+          </html>
+          EOL
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          branch: gh-pages 
