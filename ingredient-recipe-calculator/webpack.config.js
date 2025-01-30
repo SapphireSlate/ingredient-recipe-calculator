@@ -4,7 +4,6 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 const isProduction = process.env.NODE_ENV === 'production';
-const baseUrl = isProduction ? '/ingredient-recipe-calculator/typescript' : '/';
 
 module.exports = {
   entry: './src/index.tsx',
@@ -12,7 +11,7 @@ module.exports = {
     path: path.resolve(__dirname, 'build'),
     filename: 'bundle.[contenthash].js',
     clean: true,
-    publicPath: baseUrl + '/',
+    publicPath: './',
   },
   module: {
     rules: [
@@ -58,7 +57,7 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: './public/index.html',
-      publicPath: baseUrl + '/',
+      publicPath: './',
     }),
     new MiniCssExtractPlugin({
       filename: 'styles.[contenthash].css',
