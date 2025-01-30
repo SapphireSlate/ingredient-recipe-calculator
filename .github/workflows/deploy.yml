@@ -3,18 +3,18 @@ name: Deploy Multiple Versions
 on:
   push:
     branches:
-      - main
+      - pages
       - gh-pages-typescript
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Main Branch
+      - name: Checkout Stable Branch
         uses: actions/checkout@v3
         with:
-          ref: main
-          path: main-version
+          ref: pages
+          path: stable-version
 
       - name: Checkout TypeScript Branch
         uses: actions/checkout@v3
@@ -29,7 +29,7 @@ jobs:
 
       # Build Stable Version
       - name: Build Stable Version
-        working-directory: main-version
+        working-directory: stable-version
         run: |
           npm install
           npm run build
