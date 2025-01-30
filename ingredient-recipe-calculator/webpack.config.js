@@ -12,7 +12,7 @@ module.exports = {
     path: path.resolve(__dirname, 'build'),
     filename: 'bundle.[contenthash].js',
     clean: true,
-    publicPath: baseUrl + '/typescript/',
+    publicPath: baseUrl + '/',
   },
   module: {
     rules: [
@@ -58,7 +58,7 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: './public/index.html',
-      publicPath: baseUrl + '/typescript/',
+      publicPath: baseUrl + '/',
     }),
     new MiniCssExtractPlugin({
       filename: 'styles.[contenthash].css',
