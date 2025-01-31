@@ -14,7 +14,7 @@ export const HelpDialog = () => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="fixed bottom-4 right-4">
+        <Button variant="ghost" size="icon">
           <HelpCircle className="h-6 w-6" />
           <span className="sr-only">Help</span>
         </Button>
