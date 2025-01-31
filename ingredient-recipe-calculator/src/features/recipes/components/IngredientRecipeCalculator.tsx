@@ -17,6 +17,12 @@ import type { User, UserData } from '@/shared/types/user';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { v4 as uuidv4 } from 'uuid';
 import * as XLSX from 'xlsx';
+import { DuplicateIngredientsDialog } from '@/components/ui/DuplicateIngredientsDialog';
+
+interface ImportRow {
+  [key: string]: unknown;
+  __rowNum__?: number;
+}
 
 const IngredientRecipeCalculator: React.FC = () => {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -37,6 +43,9 @@ const IngredientRecipeCalculator: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingValues, setEditingValues] = useState<Ingredient | null>(null);
+  const [duplicates, setDuplicates] = useState<{ existing: Ingredient; new: Ingredient }[]>([]);
+  const [pendingIngredients, setPendingIngredients] = useState<Ingredient[]>([]);
+  const [showDuplicatesDialog, setShowDuplicatesDialog] = useState(false);
 
   // Check for existing session on component mount
   useEffect(() => {
@@ -267,109 +276,133 @@ const IngredientRecipeCalculator: React.FC = () => {
     }
   }, [ingredients, recipes, currentUser]);
 
-  const validateImportedIngredient = (row: any): { isValid: boolean; error?: string } => {
-    // Normalize column names to lowercase for case-insensitive matching
-    const normalizedRow = Object.entries(row).reduce((acc, [key, value]) => {
-      acc[key.toLowerCase()] = value;
-      return acc;
-    }, {} as any);
-
-    // Check required fields
-    if (!normalizedRow.name?.toString().trim()) {
-      return { isValid: false, error: `Missing name in row ${row.__rowNum__ + 1}` };
-    }
-    if (!normalizedRow.price || isNaN(parseFloat(normalizedRow.price))) {
-      return { isValid: false, error: `Invalid price for ${normalizedRow.name}` };
-    }
-    if (!normalizedRow.amount || isNaN(parseFloat(normalizedRow.amount))) {
-      return { isValid: false, error: `Invalid amount for ${normalizedRow.name}` };
-    }
-
-    const unitValue = normalizedRow.unit?.toString().toLowerCase();
-    const validUnits = Object.values(Unit).map(u => u.toLowerCase());
-    if (!unitValue || !validUnits.includes(unitValue)) {
-      return { 
-        isValid: false, 
-        error: `Invalid unit for ${normalizedRow.name}. Must be one of: ${Object.values(Unit).join(', ')}` 
-      };
-    }
-
-    // Check for duplicate names
-    const isDuplicateName = ingredients.some(
-      existing => existing.name.toLowerCase() === normalizedRow.name.toString().trim().toLowerCase()
-    );
-    if (isDuplicateName) {
-      return { isValid: false, error: `An ingredient with name "${normalizedRow.name}" already exists` };
-    }
-
-    return { isValid: true };
-  };
-
-  const handleImportIngredients = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportIngredients = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(worksheet);
+        const rows = XLSX.utils.sheet_to_json(worksheet) as ImportRow[];
 
         const errors: string[] = [];
         const newIngredients: Ingredient[] = [];
+        const foundDuplicates: { existing: Ingredient; new: Ingredient }[] = [];
 
-        rows.forEach((row: any) => {
+        for (const row of rows) {
           // Normalize column names
-          const normalizedRow = Object.entries(row).reduce((acc, [key, value]) => {
+          const normalizedRow = Object.entries(row as Record<string, unknown>).reduce((acc, [key, value]) => {
             acc[key.toLowerCase()] = value;
             return acc;
-          }, {} as any);
+          }, {} as Record<string, unknown>);
 
-          const validation = validateImportedIngredient(normalizedRow);
-          if (!validation.isValid) {
-            errors.push(validation.error || 'Invalid row');
-            return;
+          // Basic validation
+          if (!normalizedRow.name || typeof normalizedRow.name !== 'string' || !normalizedRow.name.trim()) {
+            errors.push(`Missing name in row ${(row.__rowNum__ ?? 0) + 1}`);
+            continue;
           }
 
-          const unitValue = normalizedRow.unit.toString().toLowerCase();
+          const price = Number(normalizedRow.price);
+          if (isNaN(price) || price <= 0) {
+            errors.push(`Invalid price for ${normalizedRow.name}`);
+            continue;
+          }
+
+          const amount = Number(normalizedRow.amount);
+          if (isNaN(amount) || amount <= 0) {
+            errors.push(`Invalid amount for ${normalizedRow.name}`);
+            continue;
+          }
+
+          const unitValue = String(normalizedRow.unit ?? '').toLowerCase();
+          const validUnits = Object.values(Unit).map(u => u.toLowerCase());
+          if (!unitValue || !validUnits.includes(unitValue)) {
+            errors.push(`Invalid unit for ${normalizedRow.name}. Must be one of: ${Object.values(Unit).join(', ')}`);
+            continue;
+          }
+
           const unit = Object.values(Unit).find(u => u.toLowerCase() === unitValue);
           if (!unit) {
             errors.push(`Invalid unit for ${normalizedRow.name}`);
-            return;
+            continue;
           }
 
-          const unitPrice = calculateUnitPrice(
-            parseFloat(normalizedRow.price),
-            parseFloat(normalizedRow.amount),
-            unit
+          const unitPrice = calculateUnitPrice(price, amount, unit);
+
+          const newIngredient: Ingredient = {
+            id: uuidv4(),
+            name: String(normalizedRow.name).trim(),
+            price: price.toString(),
+            amount: amount.toString(),
+            unit,
+            category: (normalizedRow.category && typeof normalizedRow.category === 'string' 
+              ? normalizedRow.category 
+              : 'Other') as Category,
+            unitPrice,
+          };
+
+          // Check for duplicates
+          const existingIngredient = ingredients.find(
+            ing => ing.name.toLowerCase() === newIngredient.name.toLowerCase()
           );
 
-          newIngredients.push({
-            id: uuidv4(),
-            name: normalizedRow.name.toString().trim(),
-            price: normalizedRow.price.toString(),
-            amount: normalizedRow.amount.toString(),
-            unit,
-            category: (normalizedRow.category || 'Other') as Category,
-            unitPrice,
-          });
-        });
+          if (existingIngredient) {
+            foundDuplicates.push({
+              existing: existingIngredient,
+              new: newIngredient
+            });
+          } else {
+            newIngredients.push(newIngredient);
+          }
+        }
 
         if (errors.length > 0) {
           setError(`Import errors:\n${errors.join('\n')}`);
           return;
         }
 
-        setIngredients(prev => [...prev, ...newIngredients]);
-        setError('');
+        if (foundDuplicates.length > 0) {
+          setDuplicates(foundDuplicates);
+          setPendingIngredients(newIngredients);
+          setShowDuplicatesDialog(true);
+        } else {
+          setIngredients(prev => [...prev, ...newIngredients]);
+          setError('');
+        }
+
         event.target.value = ''; // Reset file input
       } catch (err) {
         setError('Failed to import file. Please make sure it is a valid Excel file with the correct format.');
       }
     };
     reader.readAsArrayBuffer(file);
+  };
+
+  const handleDuplicateResolution = (resolvedDuplicates: { existing: Ingredient; new: Ingredient; action: 'keep' | 'replace' | undefined }[]) => {
+    const updatedIngredients = [...ingredients];
+
+    // Process resolved duplicates
+    resolvedDuplicates.forEach(({ existing, new: newIng, action }) => {
+      if (action === 'replace') {
+        const index = updatedIngredients.findIndex(ing => ing.id === existing.id);
+        if (index !== -1) {
+          updatedIngredients[index] = newIng;
+        }
+      }
+      // If action is 'keep', we do nothing as we're keeping the existing ingredient
+    });
+
+    // Add all pending ingredients that weren't duplicates
+    setIngredients([...updatedIngredients, ...pendingIngredients]);
+    
+    // Reset state
+    setDuplicates([]);
+    setPendingIngredients([]);
+    setShowDuplicatesDialog(false);
+    setError('');
   };
 
   const handleExportIngredients = () => {
@@ -812,6 +845,14 @@ const IngredientRecipeCalculator: React.FC = () => {
         </>
       )}
       <ThemeToggle />
+      {showDuplicatesDialog && (
+        <DuplicateIngredientsDialog
+          isOpen={showDuplicatesDialog}
+          onClose={() => setShowDuplicatesDialog(false)}
+          duplicates={duplicates.map(d => ({ ...d, action: undefined }))}
+          onResolve={handleDuplicateResolution}
+        />
+      )}
     </div>
   );
 };

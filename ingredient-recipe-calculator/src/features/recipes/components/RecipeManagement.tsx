@@ -335,6 +335,7 @@ export const RecipeManagement: React.FC<Props> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex-grow grid grid-cols-6 gap-4">
                     <div>
+                      <Label className="mb-2">Recipe Name</Label>
                       {editingId === recipe.id ? (
                         <Input
                           value={editingValues?.name || ''}
@@ -347,6 +348,7 @@ export const RecipeManagement: React.FC<Props> = ({
                       )}
                     </div>
                     <div>
+                      <Label className="mb-2">Yield</Label>
                       {editingId === recipe.id ? (
                         <Input
                           type="number"
@@ -360,6 +362,7 @@ export const RecipeManagement: React.FC<Props> = ({
                       )}
                     </div>
                     <div>
+                      <Label className="mb-2">Sales Price</Label>
                       {editingId === recipe.id ? (
                         <Input
                           type="number"
@@ -373,6 +376,7 @@ export const RecipeManagement: React.FC<Props> = ({
                       )}
                     </div>
                     <div>
+                      <Label className="mb-2">Prep Time</Label>
                       {editingId === recipe.id ? (
                         <Input
                           type="number"
@@ -386,6 +390,7 @@ export const RecipeManagement: React.FC<Props> = ({
                       )}
                     </div>
                     <div>
+                      <Label className="mb-2">Shelf Life</Label>
                       {editingId === recipe.id ? (
                         <Input
                           type="number"
@@ -399,6 +404,7 @@ export const RecipeManagement: React.FC<Props> = ({
                       )}
                     </div>
                     <div className="flex items-center gap-2">
+                      <Label className="mb-2">Actions</Label>
                       {editingId === recipe.id ? (
                         <>
                           <Button variant="default" size="sm" onClick={saveInlineEdit}>
