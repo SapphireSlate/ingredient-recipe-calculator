@@ -476,6 +476,10 @@ const IngredientRecipeCalculator: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4 pb-20">
+      <div className="flex justify-end items-center gap-2 mb-4">
+        <ThemeToggle />
+        <HelpDialog />
+      </div>
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-0">Recipe Cost Calculator</h1>
         {currentUser && (
@@ -487,38 +491,40 @@ const IngredientRecipeCalculator: React.FC = () => {
       </div>
       
       {!currentUser ? (
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Login or Create Account</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter username"
-                />
+        <div className="flex flex-col gap-4 max-w-md mx-auto">
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Login or Create Account</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Enter username"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                  />
+                </div>
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                  <Button onClick={handleLogin} className="w-full sm:w-auto">Login</Button>
+                  <Button variant="outline" onClick={handleCreateAccount} className="w-full sm:w-auto">Create Account</Button>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
-                />
-              </div>
-              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                <Button onClick={handleLogin} className="w-full sm:w-auto">Login</Button>
-                <Button variant="outline" onClick={handleCreateAccount} className="w-full sm:w-auto">Create Account</Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       ) : (
         <>
           <Tabs value={activeTab} onValueChange={handleTabChange} defaultValue="ingredients">
@@ -845,8 +851,6 @@ const IngredientRecipeCalculator: React.FC = () => {
           </Tabs>
         </>
       )}
-      <ThemeToggle />
-      <HelpDialog />
       {showDuplicatesDialog && (
         <DuplicateIngredientsDialog
           isOpen={showDuplicatesDialog}
