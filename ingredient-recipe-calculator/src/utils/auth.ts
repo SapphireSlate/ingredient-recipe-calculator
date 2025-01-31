@@ -30,8 +30,8 @@ export const createAccount = async (username: string, password: string): Promise
   }
   
   const id = Math.random().toString(36).substr(2, 9);
-  const user = { username, password, id };
-  users[username] = user;
+  const user: User = { username, id };
+  users[username] = { username, password, id };
   userData[username] = {
     ingredients: [],
     recipes: []
@@ -42,10 +42,10 @@ export const createAccount = async (username: string, password: string): Promise
   localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
 
   // Automatically log in the new user
-  currentUser = { username, id };
+  currentUser = user;
   localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser));
 
-  return currentUser;
+  return user;
 };
 
 export const login = async (username: string, password: string): Promise<User> => {
@@ -53,7 +53,8 @@ export const login = async (username: string, password: string): Promise<User> =
   if (!user || user.password !== password) {
     throw new Error('Invalid username or password');
   }
-  currentUser = { username, id: user.id };
+
+  currentUser = { username: user.username, id: user.id };
   localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser));
   return currentUser;
 };

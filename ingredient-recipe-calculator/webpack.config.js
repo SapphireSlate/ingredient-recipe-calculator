@@ -48,11 +48,11 @@ module.exports = {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
     alias: {
       '@': path.resolve(__dirname, 'src'),
-      '@components': path.resolve(__dirname, 'src/components'),
-      '@features': path.resolve(__dirname, 'src/features'),
-      '@shared': path.resolve(__dirname, 'src/shared'),
-      '@utils': path.resolve(__dirname, 'src/shared/utils'),
-      '@types': path.resolve(__dirname, 'src/shared/types'),
+      '@/components': path.resolve(__dirname, 'src/components'),
+      '@/features': path.resolve(__dirname, 'src/features'),
+      '@/shared': path.resolve(__dirname, 'src/shared'),
+      '@/utils': path.resolve(__dirname, 'src/utils'),
+      '@/types': path.resolve(__dirname, 'src/types'),
     },
   },
   plugins: [

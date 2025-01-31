@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, SetStateAction } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -59,16 +59,16 @@ const IngredientRecipeCalculator: React.FC = () => {
     checkExistingSession();
   }, []);
 
-  const handleCreateAccount = async (): Promise<void> => {
+  const handleCreateAccount = async () => {
     try {
-      const user = await createAccount(username, password);
+      await createAccount(username, password);
+      const user = await getCurrentUser();
       setCurrentUser(user);
-      // Clear the form
       setUsername('');
       setPassword('');
-      // No need to call login since createAccount now logs in automatically
     } catch (error) {
       console.error('Error creating account:', error);
+      setError(error instanceof Error ? error.message : 'Failed to create account');
     }
   };
 

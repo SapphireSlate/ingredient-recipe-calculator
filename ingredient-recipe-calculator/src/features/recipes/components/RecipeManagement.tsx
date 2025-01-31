@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Card } from "@components/ui/card";
-import { Input } from "@components/ui/input";
-import { Button } from "@components/ui/button";
-import { Label } from "@components/ui/label";
-import { ScrollArea } from "@components/ui/scroll-area";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -11,9 +11,9 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-} from "@components/ui/dialog";
-import { Ingredient, Unit } from '@features/ingredients/types';
-import { Recipe, RecipeIngredient } from '@features/recipes/types';
+} from "@/components/ui/dialog";
+import { Ingredient, Unit } from '@/features/ingredients/types';
+import { Recipe, RecipeIngredient } from '@/features/recipes/types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface Props {
