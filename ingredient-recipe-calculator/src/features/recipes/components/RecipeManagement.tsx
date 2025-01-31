@@ -44,6 +44,51 @@ export const RecipeManagement: React.FC<Props> = ({
   const [scaleDialogOpen, setScaleDialogOpen] = useState(false);
   const [scalingRecipe, setScalingRecipe] = useState<Recipe | null>(null);
   const [scaleFactor, setScaleFactor] = useState<number>(1);
+  const [newRecipeDialogOpen, setNewRecipeDialogOpen] = useState(false);
+  const [newRecipe, setNewRecipe] = useState<Recipe>({
+    id: '',
+    name: '',
+    ingredients: [],
+    yield: 1,
+    sales: 0,
+    prepTime: 0,
+    shelfLife: 0,
+    monthlySales: 0
+  });
+
+  const handleAddNewRecipe = () => {
+    const recipeToAdd = {
+      ...newRecipe,
+      id: uuidv4()
+    };
+    onAddRecipe(recipeToAdd);
+    setNewRecipe({
+      id: '',
+      name: '',
+      ingredients: [],
+      yield: 1,
+      sales: 0,
+      prepTime: 0,
+      shelfLife: 0,
+      monthlySales: 0
+    });
+    setNewRecipeDialogOpen(false);
+  };
+
+  const handleAddIngredientToNew = () => {
+    if (ingredients.length === 0) return;
+    setNewRecipe({
+      ...newRecipe,
+      ingredients: [
+        ...newRecipe.ingredients,
+        {
+          ingredient: ingredients[0].name,
+          amount: 0,
+          unit: Unit.LB
+        }
+      ]
+    });
+  };
 
   const startEditing = (recipe: Recipe) => {
     setEditingId(recipe.id);
@@ -142,6 +187,146 @@ export const RecipeManagement: React.FC<Props> = ({
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <Dialog open={newRecipeDialogOpen} onOpenChange={setNewRecipeDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>Add New Recipe</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Recipe</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Recipe Name</Label>
+                <Input
+                  value={newRecipe.name}
+                  onChange={(e) => setNewRecipe({ ...newRecipe, name: e.target.value })}
+                  placeholder="Enter recipe name"
+                />
+              </div>
+              <div>
+                <Label>Yield (servings)</Label>
+                <Input
+                  type="number"
+                  value={newRecipe.yield}
+                  onChange={(e) => setNewRecipe({ ...newRecipe, yield: parseInt(e.target.value) })}
+                  min="1"
+                />
+              </div>
+              <div>
+                <Label>Sales Price ($)</Label>
+                <Input
+                  type="number"
+                  value={newRecipe.sales}
+                  onChange={(e) => setNewRecipe({ ...newRecipe, sales: parseFloat(e.target.value) })}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div>
+                <Label>Prep Time (minutes)</Label>
+                <Input
+                  type="number"
+                  value={newRecipe.prepTime}
+                  onChange={(e) => setNewRecipe({ ...newRecipe, prepTime: parseInt(e.target.value) })}
+                  min="0"
+                />
+              </div>
+              <div>
+                <Label>Shelf Life (days)</Label>
+                <Input
+                  type="number"
+                  value={newRecipe.shelfLife}
+                  onChange={(e) => setNewRecipe({ ...newRecipe, shelfLife: parseInt(e.target.value) })}
+                  min="0"
+                />
+              </div>
+              <div>
+                <Label>Monthly Sales</Label>
+                <Input
+                  type="number"
+                  value={newRecipe.monthlySales}
+                  onChange={(e) => setNewRecipe({ ...newRecipe, monthlySales: parseInt(e.target.value) })}
+                  min="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label>Ingredients</Label>
+                  <Button variant="outline" size="sm" onClick={handleAddIngredientToNew}>
+                    Add Ingredient
+                  </Button>
+                </div>
+                {newRecipe.ingredients.map((ing, idx) => (
+                  <div key={idx} className="grid grid-cols-4 gap-2">
+                    <select
+                      value={ing.ingredient}
+                      onChange={(e) => {
+                        const updatedIngredients = [...newRecipe.ingredients];
+                        updatedIngredients[idx] = { ...ing, ingredient: e.target.value };
+                        setNewRecipe({ ...newRecipe, ingredients: updatedIngredients });
+                      }}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      {ingredients.map((i) => (
+                        <option key={i.id} value={i.name}>
+                          {i.name}
+                        </option>
+                      ))}
+                    </select>
+                    <Input
+                      type="number"
+                      value={ing.amount}
+                      onChange={(e) => {
+                        const updatedIngredients = [...newRecipe.ingredients];
+                        updatedIngredients[idx] = { ...ing, amount: parseFloat(e.target.value) };
+                        setNewRecipe({ ...newRecipe, ingredients: updatedIngredients });
+                      }}
+                      min="0"
+                      step="0.01"
+                    />
+                    <select
+                      value={ing.unit}
+                      onChange={(e) => {
+                        const updatedIngredients = [...newRecipe.ingredients];
+                        updatedIngredients[idx] = { ...ing, unit: e.target.value as Unit };
+                        setNewRecipe({ ...newRecipe, ingredients: updatedIngredients });
+                      }}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      {Object.values(Unit).map((unit) => (
+                        <option key={unit} value={unit}>
+                          {unit}
+                        </option>
+                      ))}
+                    </select>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        const updatedIngredients = [...newRecipe.ingredients];
+                        updatedIngredients.splice(idx, 1);
+                        setNewRecipe({ ...newRecipe, ingredients: updatedIngredients });
+                      }}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setNewRecipeDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddNewRecipe} disabled={!newRecipe.name || newRecipe.ingredients.length === 0}>
+                Add Recipe
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
       <ScrollArea className="h-[600px]">
         <div className="space-y-4">
           {recipes.map((recipe, index) => (
