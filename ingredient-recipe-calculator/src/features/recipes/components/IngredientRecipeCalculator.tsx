@@ -476,10 +476,6 @@ const IngredientRecipeCalculator: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4 pb-20">
-      <div className="flex justify-end items-center gap-2 mb-4">
-        <ThemeToggle />
-        <HelpDialog />
-      </div>
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-0">Recipe Cost Calculator</h1>
         {currentUser && (
@@ -859,6 +855,12 @@ const IngredientRecipeCalculator: React.FC = () => {
           onResolve={handleDuplicateResolution}
         />
       )}
+      <div className="fixed bottom-4 left-4">
+        <ThemeToggle />
+      </div>
+      <div className="fixed bottom-4 right-4">
+        <HelpDialog />
+      </div>
     </div>
   );
 };
