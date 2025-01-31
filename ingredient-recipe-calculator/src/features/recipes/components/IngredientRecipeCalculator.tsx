@@ -18,6 +18,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { v4 as uuidv4 } from 'uuid';
 import * as XLSX from 'xlsx';
 import { DuplicateIngredientsDialog } from '@/components/ui/DuplicateIngredientsDialog';
+import { HelpDialog } from '@/components/ui/help-dialog';
 
 interface ImportRow {
   [key: string]: unknown;
@@ -845,6 +846,7 @@ const IngredientRecipeCalculator: React.FC = () => {
         </>
       )}
       <ThemeToggle />
+      <HelpDialog />
       {showDuplicatesDialog && (
         <DuplicateIngredientsDialog
           isOpen={showDuplicatesDialog}
