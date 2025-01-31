@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/ingredient-recipe-calculator/javascript/static/css/main.c399a412.css",
+    "main.js": "/ingredient-recipe-calculator/javascript/static/js/main.2de36d60.js",
+    "static/js/453.ca9859e8.chunk.js": "/ingredient-recipe-calculator/javascript/static/js/453.ca9859e8.chunk.js",
+    "index.html": "/ingredient-recipe-calculator/javascript/index.html",
+    "main.c399a412.css.map": "/ingredient-recipe-calculator/javascript/static/css/main.c399a412.css.map",
+    "main.2de36d60.js.map": "/ingredient-recipe-calculator/javascript/static/js/main.2de36d60.js.map",
+    "453.ca9859e8.chunk.js.map": "/ingredient-recipe-calculator/javascript/static/js/453.ca9859e8.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.c399a412.css",
+    "static/js/main.2de36d60.js"
+  ]
+}
