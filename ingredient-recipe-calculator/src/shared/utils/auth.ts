@@ -1,6 +1,6 @@
-import { User } from '@shared/types/user';
-import { Ingredient } from '@features/ingredients/types';
-import { Recipe } from '@features/recipes/types';
+import { User } from '@/shared/types/user';
+import { Ingredient } from '@/features/ingredients/types';
+import { Recipe } from '@/features/recipes/types';
 
 interface UserData {
   ingredients: Ingredient[];

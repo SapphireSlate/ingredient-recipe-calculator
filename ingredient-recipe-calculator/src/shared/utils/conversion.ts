@@ -1,4 +1,4 @@
-import { Unit } from '@features/ingredients/types';
+import { Unit } from '@/features/ingredients/types';
 
 export const convertToOz = (amount: number, unit: Unit): number => {
   switch (unit) {
